@@ -35,7 +35,7 @@
   <circle cx="400" cy="400" r="8" fill="red"/>
 
   <circle id="mod1circle" cx="20" cy="20" r="5" fill="cyan"/>
-  <circle id="mod2circle" cx="380" cy="20" r="5" fill="yellow"/>
+  <circle id="mod2circle" cx="180" cy="20" r="5" fill="yellow"/>
 
 
 </svg>
@@ -48,104 +48,130 @@
 
 <script type='text/javascript'>
 
-	const defaultLockTime = 120;
-    let locked = true;
-	let lockTime = defaultLockTime;
 
-	let circSpeed = 2;
-	let circMaxFactor = 5;
-	let circAcc = 0.005;
-	let circRepulse = -200;
+	function Segment (type = 'C', end = {x:0, y:0}) {
+		this.cpoints = [];
+		this.end = {x: end.x, y: end.y};
 
-	let mod1x = document.getElementById('mod1x');
-	let mod1y = document.getElementById('mod1y');
-	let mod1circle = document.getElementById('mod1circle');
-	let mod1circleAngle = 2*Math.PI*Math.random();
-	let mod1circleSpeed = 0;
-	let mod1circleMass = 1;
-	let r1 = mod1circle.getAttribute('r');
-
-	let mod2x = document.getElementById('mod2x');
-	let mod2y = document.getElementById('mod2y');
-	let mod2circle = document.getElementById('mod2circle');
-	let mod2circleAngle = 2*Math.PI*Math.random();
-	let mod2circleSpeed = 0;
-	let mod2circleMass = 1;
-	let r2 = mod2circle.getAttribute('r');
-
-
-	let pathy = {
-		name: 'pathy',
-		start: {x: 0, y: 200},
-		end: {x: 400, y: 200},
-		//need to divide into segments, each with own control points
-		//a mutation can determine whether to use C, Q, S or T for each seg
-		cpoints: [
-			{x: 20, y: 20},
-			{x: 380, y: 20}
-		],
-		markup: '',
-
-		assemblePath: function () {
-			let d = `M ${this.start.x} ${this.start.y} C`;
-			for (let i = 0, l = this.cpoints.length; i < l; i++) {
-				d += `${this.cpoints[i].x} ${this.cpoints[i].y}, `;
+		
+		if(this.seg_cpoints[type]) {
+			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
+				this.cpoints.push({x:0, y:0});
 			}
-			d += `400 200 L 400 400 L 0 400 Z`;
-			return d;
-		},
-
-		update: function () {
-			this.element.setAttribute('d', this.assemblePath());
-		},
-
-		createMarkup: function () {
-			pathy.markup = `<path id="${this.name}" d="${this.assemblePath()}" stroke="white" fill="black" />`;
-		},
-
-		render: function (target) {
-			target.insertAdjacentHTML('afterbegin', this.markup);
+			this.type = type;
+		} else {
+			this.type = 'C';
 		}
 	}
 
-	pathy.createMarkup();
-	pathy.render(being);
-	pathy.element = document.getElementById(pathy.name);
+	Segment.prototype.seg_cpoints = {
+		C: 2,
+		S: 1,
+		Q: 1,
+		T: 0,
+		L: 0,
+	}
+
+	function Pathicle (options = {}) {
+		var options = options;
+		this.name = options.name || 'Bob';
+		this.start = options.start || {x: 0, y: 200};
+		this.end = options.end || {x:400, y: 200};
+		this.segments = [];
+		this.markup = '';
+
+
+		// pathy.segments[0].end = pathy.end;
+		this.createMarkup();
+		this.render(being);
+		this.element = document.getElementById(this.name);
+	}
+
+	Pathicle.prototype.assemblePath = function () {
+		let d = `M ${this.start.x} ${this.start.y} `;
+		for (let i = 0, l = this.segments.length; i < l; i++) {
+			let thisSegment = this.segments[i];
+			if (i == l - 1) {thisSegment.end = this.end;}
+			d += `${thisSegment.type} `;
+			console.log(thisSegment);
+			console.log(thisSegment.seg_cpoints[thisSegment.type]);
+			if(thisSegment.seg_cpoints[thisSegment.type] > 0) {
+				for (let j = 0, m = thisSegment.seg_cpoints[thisSegment.type]; j < m; j++) {
+					d += `${thisSegment.cpoints[j].x} ${thisSegment.cpoints[j].y}, `;
+				}
+			}
+
+			d += `${thisSegment.end.x} ${thisSegment.end.y} `; 	
+		}
+		d += `L 400 400 L 0 400 Z`;
+		return d;
+	}
+
+	Pathicle.prototype.createMarkup = function () {
+		this.markup = `<path id="${this.name}" d="${this.assemblePath()}" stroke="white" fill="black" />`;
+	}
+
+	Pathicle.prototype.update = function () {
+		this.element.setAttribute('d', this.assemblePath());
+	}
+
+	Pathicle.prototype.render = function (target) {
+			target.insertAdjacentHTML('afterbegin', this.markup);
+	}
+
+
+
+	let pathy = new Pathicle({name: 'pathy'});
+
+
+	pathy.segments.push(new Segment());
+
+	pathy.segments[0].cpoints = [
+		{x: 20, y: 20},
+		{x: 180, y: 20}
+	];
+	pathy.segments[0].end = {x:200, y:200};
+
+	let seg2 = new Segment('L');
+	seg2.cpoints = [
+		{x: 380, y: 200}
+	];
+
+	pathy.segments.push(seg2);
+	pathy.update()
+
 
 
 	mod1x.value = 20;
 	mod1x.addEventListener('input', () => {
-		pathy.cpoints[0].x = parseFloat(mod1x.value);
+		pathy.segments[0].cpoints[0].x = parseFloat(mod1x.value);
 		mod1circle.setAttribute('cx', `${mod1x.value}`);
 		pathy.update();
 	});
 
 	mod1y.value = 20;
 	mod1y.addEventListener('input', () => {
-		pathy.cpoints[0].y = parseFloat(mod1y.value);
+		pathy.segments[0].cpoints[0].y = parseFloat(mod1y.value);
 		mod1circle.setAttribute('cy', `${mod1y.value}`);
 		pathy.update();
 
 	});
 
-	mod2x.value = 380;
+	mod2x.value = 200;
 	mod2x.addEventListener('input', () => {
-		pathy.cpoints[1].x = parseFloat(mod2x.value);
+		pathy.segments[0].cpoints[1].x = parseFloat(mod2x.value);
 		mod2circle.setAttribute('cx', `${mod2x.value}`);
 		pathy.update();
 	});
 
 	mod2y.value = 20;
 	mod2y.addEventListener('input', () => {
-		pathy.cpoints[1].y = parseFloat(mod2y.value);
+		pathy.segments[0].cpoints[1].y = parseFloat(mod2y.value);
 		mod2circle.setAttribute('cy', `${mod2y.value}`);
 		pathy.update();
 	});
 
-	function changePathic() {
-		pathic.setAttribute('d', `M 0 200 C ${mod1x.value} ${mod1y.value}, ${mod2x.value} ${mod2y.value}, 400 200 L 400 400 L 0 400 Z`);
-	}
-
+pathy.update();
 	
 
 
