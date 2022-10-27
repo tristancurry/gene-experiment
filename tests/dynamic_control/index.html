@@ -52,16 +52,15 @@
 	function Segment (type = 'C', end = {x:0, y:0}) {
 		this.cpoints = [];
 		this.end = {x: end.x, y: end.y};
-
-		
-		if(this.seg_cpoints[type]) {
-			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
-				this.cpoints.push({x:0, y:0});
-			}
-			this.type = type;
-		} else {
+		this.type = type;
+		if(!this.seg_cpoints.hasOwnProperty(this.type)) {
 			this.type = 'C';
-		}
+		} 
+		if(this.seg_cpoints[this.type] > 0) {
+			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
+					this.cpoints.push({x:0, y:0});
+			}
+		} 
 	}
 
 	Segment.prototype.seg_cpoints = {
@@ -93,8 +92,6 @@
 			let thisSegment = this.segments[i];
 			if (i == l - 1) {thisSegment.end = this.end;}
 			d += `${thisSegment.type} `;
-			console.log(thisSegment);
-			console.log(thisSegment.seg_cpoints[thisSegment.type]);
 			if(thisSegment.seg_cpoints[thisSegment.type] > 0) {
 				for (let j = 0, m = thisSegment.seg_cpoints[thisSegment.type]; j < m; j++) {
 					d += `${thisSegment.cpoints[j].x} ${thisSegment.cpoints[j].y}, `;
@@ -124,7 +121,7 @@
 	let pathy = new Pathicle({name: 'pathy'});
 
 
-	pathy.segments.push(new Segment());
+	pathy.segments.push(new Segment('C'));
 
 	pathy.segments[0].cpoints = [
 		{x: 20, y: 20},
@@ -132,9 +129,10 @@
 	];
 	pathy.segments[0].end = {x:200, y:200};
 
-	let seg2 = new Segment('L');
+	let seg2 = new Segment('S');
 	seg2.cpoints = [
-		{x: 380, y: 200}
+		{x: 380, y: 100},
+		{x: 320, y: 300},
 	];
 
 	pathy.segments.push(seg2);
