@@ -54,7 +54,7 @@
 		this.end = {x: end.x, y: end.y};
 
 		
-		if(this.seg_cpoints[type]) {
+		if(this.seg_cpoints.hasOwnProperty(type)) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
 				this.cpoints.push({x:0, y:0});
 			}
@@ -93,8 +93,7 @@
 			let thisSegment = this.segments[i];
 			if (i == l - 1) {thisSegment.end = this.end;}
 			d += `${thisSegment.type} `;
-			console.log(thisSegment);
-			console.log(thisSegment.seg_cpoints[thisSegment.type]);
+
 			if(thisSegment.seg_cpoints[thisSegment.type] > 0) {
 				for (let j = 0, m = thisSegment.seg_cpoints[thisSegment.type]; j < m; j++) {
 					d += `${thisSegment.cpoints[j].x} ${thisSegment.cpoints[j].y}, `;
