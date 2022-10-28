@@ -52,15 +52,16 @@
 	function Segment (type = 'C', end = {x:0, y:0}) {
 		this.cpoints = [];
 		this.end = {x: end.x, y: end.y};
-		this.type = type;
-		if(!this.seg_cpoints.hasOwnProperty(this.type)) {
-			this.type = 'C';
-		} 
-		if(this.seg_cpoints[this.type] > 0) {
+
+		
+		if(this.seg_cpoints[type]) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
-					this.cpoints.push({x:0, y:0});
+				this.cpoints.push({x:0, y:0});
 			}
-		} 
+			this.type = type;
+		} else {
+			this.type = 'C';
+		}
 	}
 
 	Segment.prototype.seg_cpoints = {
@@ -92,6 +93,8 @@
 			let thisSegment = this.segments[i];
 			if (i == l - 1) {thisSegment.end = this.end;}
 			d += `${thisSegment.type} `;
+			console.log(thisSegment);
+			console.log(thisSegment.seg_cpoints[thisSegment.type]);
 			if(thisSegment.seg_cpoints[thisSegment.type] > 0) {
 				for (let j = 0, m = thisSegment.seg_cpoints[thisSegment.type]; j < m; j++) {
 					d += `${thisSegment.cpoints[j].x} ${thisSegment.cpoints[j].y}, `;
@@ -121,7 +124,7 @@
 	let pathy = new Pathicle({name: 'pathy'});
 
 
-	pathy.segments.push(new Segment('C'));
+	pathy.segments.push(new Segment());
 
 	pathy.segments[0].cpoints = [
 		{x: 20, y: 20},
@@ -129,14 +132,13 @@
 	];
 	pathy.segments[0].end = {x:200, y:200};
 
-	let seg2 = new Segment('S');
+	let seg2 = new Segment('L');
 	seg2.cpoints = [
-		{x: 380, y: 100},
-		{x: 320, y: 300},
+		{x: 380, y: 200}
 	];
 
 	pathy.segments.push(seg2);
-	pathy.update()
+	pathy.update();
 
 
 
@@ -173,7 +175,23 @@ pathy.update();
 	
 
 
+//need to encode genes for
+//curve type.
+//control points (locations)
+//curve end point
 
+//the transcription is an ongoing, dynamic process that generates proteins that have consequences for the shape
+//proteins are soaked up in producing phenotypic things
+//e.g. there's a gene for a C with control points a and b.
+//this is transcribed into a protein that produces this effect. (NB there can be transcription errors!)
+//there may be multiple transcriptions of the same gene, producing a lot of this protein
+//at the same time, there's another protein being generated that produces a different C
+//proteins that affect the exact same 'area' are selected from at random. Their effects are averaged.
+//the selection continues until all 'slots' are used. The 'slots' are determined by the size of the structure, and genetic factors.
+//excess proteins are exchanged between structures, excreted wholesale, or broken down by lysosomal action
+//every action here takes energy to perform
+//other excess material remains in the structure for the next round of allocations. this can end up preventing absorption into the structure
+//or preventing it from producing the mix of proteins required for survival.
 
 			
 
