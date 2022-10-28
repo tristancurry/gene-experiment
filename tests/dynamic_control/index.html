@@ -179,6 +179,8 @@ pathy.update();
 //curve type.
 //control points (locations)
 //curve end point
+//ribosomal efficiency (energy, speed of production, error rate)
+//lysosomal efficiency
 //there is a limited (but very large) number of 'receptor' functions describing an effect.
 //these receptors can be inhibited by the actions of certain proteins or even environmental effects.
 //the receptors have a certain number of slots, too. This is subject to genetic factors too...
@@ -186,14 +188,16 @@ pathy.update();
 //this will be in the form of a lookup table.
 
 //proteins look like
-// CBNQPCQNBFAXNCAABAAANMBABB
-// CB    NQPC      QNB      FAXN       CAA      BAAB										NM 						BABB
-// type  receptor  strngth  receptor   strngth	can attach to active gene sites ba and ab	spacer (one of several)	can directly bind proteins BA and BB
+// CBNQPCQNBFAXNBAAANMBABB
+// CB    NQPC      QNB      FAXN        BAAB										NM 						BABB
+// type  receptor  strngth  receptor   	can attach to active gene sites ba and ab	spacer (one of several)	can directly bind proteins BA and BB
 //bound proteins (and the binding proteins) are removed from functional processes. Not all proteins bind others.
 
 //receptor looks like
-//NQPC     ABV		bAqT       CrBr 
-//receptor   slots  	effect1	   effect2 
+//NQPC     ABV		bAqT     NFR          CrBr     mfL
+//receptor slots    effect1  strength     effect2  strength
+
+//individual effects drawn from expansive library of effects.
 
 //active gene attachment sites allow protein mediated expression of genes. 
 //receptor on gene looks like
@@ -201,6 +205,8 @@ pathy.update();
 //receptor 
 //these can either be promoting or inhibiting receptors. This allows proteins to bind directly to these sites.
 //there are also less specific protein binding sites (ab, aa, etc) that allow a multitude of different proteins to bind.
+
+//those receptor codes could be complementary to the protein's receptor code.
 
 
 //the transcription is an ongoing, dynamic process that generates proteins that have consequences for the shape
