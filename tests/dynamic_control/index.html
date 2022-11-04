@@ -170,10 +170,66 @@
 		pathy.update();
 	});
 
-pathy.update();
+
 	
+//this step involves only the proteins that are left after binding, excretion, lysing etc
+//i.e. the ones that 'get to' have direct, visible effects
+
+let doProteinEffects = function (target) {
+	//for each genetic property, create a temporary buffer.
+	//for now though...work on control points
+
+	//work through each protein in the list. Currently there is only one of these.
+	let activeProteins = [{name: 'A', units: 50}];
+	activeProteins.forEach(protein => {
+		if(!target.cpoints) {
+			//do nothing
+		} else {
+			let cpoint = target.cpoints[0].x;
+			if(!effectLookup[protein.name]) {
+				//no effect. Protein remains in structure until removed.
+			} else {
+				let thisEffect = effectLookup[protein.name];
+				let units = protein.units;
+				while(units > 0) {
+					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
+					units -= 1;
+					console.log(units);
+				}
+				protein.units = 0;
+				target.cpoints[0].x = cpoint;
+	
+			}
+	
+		}
+	});
+
+}
+
+//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
+let addParam = function (param, inc) {
+	//aside from effects on other proteins, the protein may also have
+	//a list of direct effects on the appearance of a structure
+	//in this case, it's to increase the x-coordinate of the first control point
+	//the effect needs to be applied as a component of a 'force' against the existing value
+	//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
+	//TODO: find a way to subdivide an existing bezier curve to allow for growth
+	if (!param) {
+		//do nothing
+	} else {
+		return (param + inc);
+	}
+
+}
+
+//working title. Start with one segment and see how the gene decoding goes.
+let effectLookup = {
+	A: [{effect:addParam, args: [10]}]
+}
 
 
+doProteinEffects(pathy.segments[0]);
+pathy.update();
 //need to encode genes for
 //curve type.
 //control points (locations)
@@ -197,6 +253,13 @@ pathy.update();
 //receptor slots    effect1  strength     effect2  strength
 
 //individual effects drawn from expansive library of effects.
+//these effects change depending on the context (e.g. tissue type)?
+//so each gene needs a number of 'switches'...effectively those active gene sites.
+//a protein can attach to a given switch and either enhance the gene action to a degree, or repress it
+//another protein can bind to these proteins and remove them. So we have to keep track of which proteins are bound to the genes?
+
+//create a 'protein' object, and bind to a 'gene' object.
+//do we want to notionally create 'gene' objects that are then compiled into a genome for exposure to the user? I wanted this to be pretty obscure.
 
 //active gene attachment sites allow protein mediated expression of genes. 
 //receptor on gene looks like
