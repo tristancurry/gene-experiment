@@ -72,6 +72,10 @@
 		L: 0,
 	}
 
+	Segment.prototype.effectLookup = {
+		A: [{effect:addParam, args: [this.cpoints[0].x, 10]}]
+	}
+
 	function Pathicle (options = {}) {
 		var options = options;
 		this.name = options.name || 'Bob';
@@ -117,6 +121,8 @@
 	Pathicle.prototype.render = function (target) {
 			target.insertAdjacentHTML('afterbegin', this.markup);
 	}
+
+
 
 
 
@@ -185,11 +191,11 @@ let doProteinEffects = function (target) {
 		if(!target.cpoints) {
 			//do nothing
 		} else {
-			let cpoint = target.cpoints[0].x;
 			if(!effectLookup[protein.name]) {
 				//no effect. Protein remains in structure until removed.
 			} else {
 				let thisEffect = effectLookup[protein.name];
+				let cpoint = target.cpoints[0].x;
 				let units = protein.units;
 				while(units > 0) {
 					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
@@ -223,9 +229,7 @@ let addParam = function (param, inc) {
 }
 
 //working title. Start with one segment and see how the gene decoding goes.
-let effectLookup = {
-	A: [{effect:addParam, args: [10]}]
-}
+
 
 
 doProteinEffects(pathy.segments[0]);
