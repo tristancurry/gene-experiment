@@ -51,7 +51,6 @@
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
 	let addParam = function (param, inc) {
-		console.log(param);
 		//aside from effects on other proteins, the protein may also have
 		//a list of direct effects on the appearance of a structure
 		//in this case, it's to increase the x-coordinate of the first control point
@@ -59,24 +58,22 @@
 		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
 		//TODO: find a way to subdivide an existing bezier curve to allow for growth
 
-		if(param) {
-			if(param.hasOwnProperty('val')) {
+
 				console.log(param);
-				return {val: (param.val + inc)};
-			}
-		}
+				return param + inc;
+
 
 	}
 
 	function Segment (type = 'C', end = {x:0, y:0}) {
 		this.cpoints = [];
 		this.end = {x: end.x, y: end.y};
-		this.expressions = {};
-		
+		this.exprs = {};
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
 				this.cpoints.push({x:0, y:0});
-				this.expressions.cpoint1x = {feature: this.cpoints[i], component: 'x'};
+				this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: [this.cpoints, i, 'x']};
+				this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: [this.cpoints, i, 'y']};
 			this.type = type;
 			}
 		} else {
@@ -98,10 +95,26 @@
 		A: [
 				{
 					effect:addParam, 
-					expression: 'cpoint1x',
+					expr: 'cpoint1x',
 					args: [10]
 				}
 			]
+	}
+
+	Segment.prototype.exprToControlPoints = function () {
+		console.log(this.exprs);
+		for (let e in this.exprs) {
+			let expr = this.exprs[e];
+			if (expr) {
+				console.log(expr);
+				if(expr.ref) {
+					console.log(expr.ref[0][expr.ref[1]]);
+					console.log(this.cpoints[0].x)
+					expr.ref[0][expr.ref[1]][expr.ref[2]] = expr.val;
+				}
+
+			}
+		}
 	}
 
 
@@ -225,27 +238,25 @@ let doProteinEffects = function (target) {
 			if(!target.effectLookup[protein.name]) {
 				//no effect. Protein remains in structure until removed.
 			} else {
-				console.log(target.cpoints);
-				console.log(target.effectLookup);
 				let thisEffect = target.effectLookup[protein.name];
-				let thisExpr = target.expressions[thisEffect[0].expression];
+				let thisExpr = target.exprs[thisEffect[0].expr];
+				console.log(thisExpr);
 				
-				let cpoint = {val: thisExpr.feature[thisExpr.component]};
+				let cpoint = thisExpr.val;
 				let units = protein.units;
 				while(units > 0) {
-					console.log(cpoint);
 					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
-					console.log(cpoint);
 					units -= 1;
 				}
 				protein.units = 0;
-				target.cpoints[0].x = cpoint.val;
+				target.exprs[thisEffect[0].expr].val = cpoint;
 	
 			}
 	
 		}
 	});
-
+	target.exprToControlPoints();
+	console.log(target.cpoints);
 }
 
 
