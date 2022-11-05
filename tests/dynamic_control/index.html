@@ -51,32 +51,34 @@
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
 	let addParam = function (param, inc) {
+		console.log(param);
 		//aside from effects on other proteins, the protein may also have
 		//a list of direct effects on the appearance of a structure
 		//in this case, it's to increase the x-coordinate of the first control point
 		//the effect needs to be applied as a component of a 'force' against the existing value
 		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
 		//TODO: find a way to subdivide an existing bezier curve to allow for growth
-		if (!param) {
-			//do nothing
-		} else {
-			return (param + inc);
+
+		if(param) {
+			if(param.hasOwnProperty('val')) {
+				console.log(param);
+				return {val: (param.val + inc)};
+			}
 		}
 
 	}
 
 	function Segment (type = 'C', end = {x:0, y:0}) {
 		this.cpoints = [];
-		this.expressions = {};
 		this.end = {x: end.x, y: end.y};
-
+		this.expressions = {};
 		
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
 				this.cpoints.push({x:0, y:0});
-				this.expressions.cpoints1x = this.cpoints[i].x;
-			}
+				this.expressions.cpoint1x = {feature: this.cpoints[i], component: 'x'};
 			this.type = type;
+			}
 		} else {
 			this.type = 'C';
 		}
@@ -93,8 +95,15 @@
 
 
 	Segment.prototype.effectLookup = {
-		A: [{effect:addParam, args:['cpoint1x', 10]}]
+		A: [
+				{
+					effect:addParam, 
+					expression: 'cpoint1x',
+					args: [10]
+				}
+			]
 	}
+
 
 
 	function Pathicle (options = {}) {
@@ -205,7 +214,6 @@
 let doProteinEffects = function (target) {
 	//for each genetic property, create a temporary buffer.
 	//for now though...work on control points
-	let expressions = {};
 
 	//work through each protein in the list. Currently there is only one of these.
 	let activeProteins = [{name: 'A', units: 50}];
@@ -220,17 +228,18 @@ let doProteinEffects = function (target) {
 				console.log(target.cpoints);
 				console.log(target.effectLookup);
 				let thisEffect = target.effectLookup[protein.name];
-				let cpoint = target.cpoints[0].x;
+				let thisExpr = target.expressions[thisEffect[0].expression];
+				
+				let cpoint = {val: thisExpr.feature[thisExpr.component]};
 				let units = protein.units;
 				while(units > 0) {
-					console.log(target.expressions)
-					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[1]);
-
+					console.log(cpoint);
+					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
+					console.log(cpoint);
 					units -= 1;
-					console.log(units);
 				}
 				protein.units = 0;
-				target.cpoints[0].x = cpoint;
+				target.cpoints[0].x = cpoint.val;
 	
 			}
 	
