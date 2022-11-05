@@ -49,14 +49,32 @@
 <script type='text/javascript'>
 
 
+	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
+	let addParam = function (param, inc) {
+		//aside from effects on other proteins, the protein may also have
+		//a list of direct effects on the appearance of a structure
+		//in this case, it's to increase the x-coordinate of the first control point
+		//the effect needs to be applied as a component of a 'force' against the existing value
+		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
+		//TODO: find a way to subdivide an existing bezier curve to allow for growth
+		if (!param) {
+			//do nothing
+		} else {
+			return (param + inc);
+		}
+
+	}
+
 	function Segment (type = 'C', end = {x:0, y:0}) {
 		this.cpoints = [];
+		this.expressions = {};
 		this.end = {x: end.x, y: end.y};
 
 		
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
 				this.cpoints.push({x:0, y:0});
+				this.expressions.cpoints1x = this.cpoints[i].x;
 			}
 			this.type = type;
 		} else {
@@ -71,10 +89,13 @@
 		T: 0,
 		L: 0,
 	}
+	
+
 
 	Segment.prototype.effectLookup = {
-		A: [{effect:addParam, args: [this.cpoints[0].x, 10]}]
+		A: [{effect:addParam, args:['cpoint1x', 10]}]
 	}
+
 
 	function Pathicle (options = {}) {
 		var options = options;
@@ -184,6 +205,7 @@
 let doProteinEffects = function (target) {
 	//for each genetic property, create a temporary buffer.
 	//for now though...work on control points
+	let expressions = {};
 
 	//work through each protein in the list. Currently there is only one of these.
 	let activeProteins = [{name: 'A', units: 50}];
@@ -191,14 +213,19 @@ let doProteinEffects = function (target) {
 		if(!target.cpoints) {
 			//do nothing
 		} else {
-			if(!effectLookup[protein.name]) {
+			console.log(protein);
+			if(!target.effectLookup[protein.name]) {
 				//no effect. Protein remains in structure until removed.
 			} else {
-				let thisEffect = effectLookup[protein.name];
+				console.log(target.cpoints);
+				console.log(target.effectLookup);
+				let thisEffect = target.effectLookup[protein.name];
 				let cpoint = target.cpoints[0].x;
 				let units = protein.units;
 				while(units > 0) {
-					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
+					console.log(target.expressions)
+					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[1]);
+
 					units -= 1;
 					console.log(units);
 				}
@@ -212,21 +239,7 @@ let doProteinEffects = function (target) {
 
 }
 
-//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
-let addParam = function (param, inc) {
-	//aside from effects on other proteins, the protein may also have
-	//a list of direct effects on the appearance of a structure
-	//in this case, it's to increase the x-coordinate of the first control point
-	//the effect needs to be applied as a component of a 'force' against the existing value
-	//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
-	//TODO: find a way to subdivide an existing bezier curve to allow for growth
-	if (!param) {
-		//do nothing
-	} else {
-		return (param + inc);
-	}
 
-}
 
 //working title. Start with one segment and see how the gene decoding goes.
 
