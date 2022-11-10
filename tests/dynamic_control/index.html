@@ -39,10 +39,10 @@
 
 
 </svg>
-<input id="mod1x" type="range" min="0" max="400" />
-<input id="mod1y" type="range" min="0" max="400" />
-<input id="mod2x" type="range" min="0" max="400" />
-<input id="mod2y" type="range" min="0" max="400" />
+<input id="mod1x" type="range" min="-800" max="800" />
+<input id="mod1y" type="range" min="-800" max="800" />
+<input id="mod2x" type="range" min="-800" max="800" />
+<input id="mod2y" type="range" min="-800" max="800" />
 </div>
 
 
@@ -68,13 +68,13 @@
 		this.cpoints = [];
 		this.end = {x: end.x, y: end.y};
 		this.exprs = {};
+		for (let i = 0, l = 2; i < l; i++) {
+			this.cpoints.push({x:0, y:0});
+			this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
+			this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
+		}
 		if(this.seg_cpoints.hasOwnProperty(type)) {
-			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
-				this.cpoints.push({x:0, y:0});
-				this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
-				this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
 			this.type = type;
-			}
 		} else {
 			this.type = 'C';
 		}
@@ -180,7 +180,7 @@
 	let pathy = new Pathicle({name: 'pathy'});
 
 
-	pathy.segments.push(new Segment());
+	pathy.segments.push(new Segment('C'));
 
 	pathy.segments[0].cpoints = [
 		{x: 20, y: 20},
@@ -189,9 +189,7 @@
 	pathy.segments[0].end = {x:200, y:200};
 
 	let seg2 = new Segment('S');
-	seg2.cpoints = [
-		{x: 380, y: 200}
-	];
+	seg2.cpoints[0] = {x: 380, y: 200};
 
 	pathy.segments.push(seg2);
 	pathy.update();
@@ -235,8 +233,8 @@
 let doProteinEffects = function (target) {
 	//for each genetic property, create a temporary buffer.
 	//for now though...work on control points
-
-	//work through each protein in the list. Currently there is only one of these.
+	//active proteins will be location-specific (arriving there by transport/diffusion/production)
+	//work through each protein in the list. Currently there are three of these.
 	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 25}, {name: 'C', units: 3}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
@@ -251,7 +249,6 @@ let doProteinEffects = function (target) {
 				let proteinEffects = target.effectLookup[protein.name];
 				proteinEffects.forEach(thisEffect => {
 					let thisExpr = target.exprs[thisEffect.expr];
-					console.log(thisEffect);
 					let accumulator = thisExpr.val;
 					let units = protein.units;
 					while(units > 0) {
@@ -277,6 +274,15 @@ let doProteinEffects = function (target) {
 
 doProteinEffects(pathy.segments[0]);
 pathy.update();
+let eventy = new Event('input');
+mod1x.value = pathy.segments[0].cpoints[0].x;
+mod1y.value = pathy.segments[0].cpoints[0].y;
+mod2x.value = pathy.segments[0].cpoints[1].x;
+mod1y.value = pathy.segments[0].cpoints[1].y;
+mod1x.dispatchEvent(eventy);
+mod1y.dispatchEvent(eventy);
+mod2x.dispatchEvent(eventy);
+mod2y.dispatchEvent(eventy);
 
 //need to encode genes for
 //curve type.
