@@ -59,7 +59,6 @@
 		//TODO: find a way to subdivide an existing bezier curve to allow for growth
 
 
-				console.log(param);
 				return param + inc;
 
 
@@ -72,8 +71,8 @@
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			for (let i = 0, l = this.seg_cpoints[type]; i < l; i++) {
 				this.cpoints.push({x:0, y:0});
-				this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: [this.cpoints, i, 'x']};
-				this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: [this.cpoints, i, 'y']};
+				this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
+				this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
 			this.type = type;
 			}
 		} else {
@@ -97,22 +96,31 @@
 					effect:addParam, 
 					expr: 'cpoint1x',
 					args: [10]
+				},
+
+				{
+					effect: addParam,
+					expr: 'cpoint0x',
+					args: [-10]
 				}
-			]
+			],
+
+		B: [
+				{
+					effect:addParam, 
+					expr: 'cpoint1y',
+					args: [-5]
+				}
+		],
 	}
 
-	Segment.prototype.exprToControlPoints = function () {
-		console.log(this.exprs);
+	Segment.prototype.express = function () {
 		for (let e in this.exprs) {
 			let expr = this.exprs[e];
 			if (expr) {
-				console.log(expr);
 				if(expr.ref) {
-					console.log(expr.ref[0][expr.ref[1]]);
-					console.log(this.cpoints[0].x)
-					expr.ref[0][expr.ref[1]][expr.ref[2]] = expr.val;
+					this[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
 				}
-
 			}
 		}
 	}
@@ -219,7 +227,7 @@
 		pathy.update();
 	});
 
-
+	
 	
 //this step involves only the proteins that are left after binding, excretion, lysing etc
 //i.e. the ones that 'get to' have direct, visible effects
@@ -229,34 +237,37 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 
 	//work through each protein in the list. Currently there is only one of these.
-	let activeProteins = [{name: 'A', units: 50}];
+	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 25}, {name: 'C', units: 3}];
 	activeProteins.forEach(protein => {
-		if(!target.cpoints) {
+		console.log(`Now deploying protein '${protein.name}'!`);
+		if(!target.effectLookup[protein.name]) {
 			//do nothing
+			console.log(`Protein '${protein.name}' has no prescribed effect.`)
 		} else {
-			console.log(protein);
+			console.log(`Protein '${protein.name}' has prescribed effects.`)
 			if(!target.effectLookup[protein.name]) {
 				//no effect. Protein remains in structure until removed.
 			} else {
-				let thisEffect = target.effectLookup[protein.name];
-				let thisExpr = target.exprs[thisEffect[0].expr];
-				console.log(thisExpr);
-				
-				let cpoint = thisExpr.val;
-				let units = protein.units;
-				while(units > 0) {
-					cpoint = thisEffect[0].effect(cpoint, thisEffect[0].args[0]);
-					units -= 1;
-				}
+				let proteinEffects = target.effectLookup[protein.name];
+				proteinEffects.forEach(thisEffect => {
+					let thisExpr = target.exprs[thisEffect.expr];
+					console.log(thisEffect);
+					let accumulator = thisExpr.val;
+					let units = protein.units;
+					while(units > 0) {
+						accumulator = thisEffect.effect(accumulator, thisEffect.args[0]);
+						units -= 1;
+					}
+					target.exprs[thisEffect.expr].val = accumulator;
+				});
 				protein.units = 0;
-				target.exprs[thisEffect[0].expr].val = cpoint;
+		
 	
 			}
 	
 		}
 	});
-	target.exprToControlPoints();
-	console.log(target.cpoints);
+	target.express();
 }
 
 
@@ -267,6 +278,7 @@ let doProteinEffects = function (target) {
 
 doProteinEffects(pathy.segments[0]);
 pathy.update();
+
 //need to encode genes for
 //curve type.
 //control points (locations)
