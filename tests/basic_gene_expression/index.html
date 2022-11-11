@@ -135,8 +135,13 @@
 		console.log(Q_0);
 		console.log(Q_1);
 
-		//then - create the necessary number of segments and put them in an array.
-		//return that.
+		//or really - create a segment from the first piece.
+		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
+		//subdivideSegment(Q_1, pieces - 1);
+
+		//how to capture each new piece along the way?
+		//want the top level to aggregate all of the pieces. Or, simply mutate the segments as we go.
+
 		splitcircle.setAttribute('cx', Q_0.x[3]);
 		splitcircle.setAttribute('cy', Q_0.y[3]);
 	}
