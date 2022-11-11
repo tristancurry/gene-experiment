@@ -67,17 +67,26 @@
 
 
 
-	let subdivideSegment = function (segment, z = 0.5) {
-		//note - rather than z be defined here, make the number of subdivisions the argument.
-		//calculate z from that.
+	let subdivideSegment = function (segment, pieces = 2) {
+
 		//need start/end and control points of this segment
 		//that's going to depend on segment type
+		//also - consider manipulating these in the horizontal frame of each segment (rather than the canvas frame)
+		//that way, any distortions can be replicated across structures pointing in different directions.
 		let s = segment;
+		let z = 1;
+		if(pieces !== 0 && typeof pieces === 'number') {
+			z = 1/pieces;
+		}
+
 		let P = {
 			x: [],
 			y: []
 		}
-
+		//gonna need something a little recursive for multiple subdivisions.
+		//Basically, first subdivision according to z (e.g. z = 0.33333)
+		//then the 'second piece' is subdivided the same way, but with 2 pieces
+		//recurse until pieces = 1 :-)
 		for(let i in P) {
 			P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
 		}
@@ -86,7 +95,14 @@
 			quadratic: [z**2, z*(z-1), (z-1)**2],
 			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
 		}
-
+		//generate a bunch of Q's corresponding to the number of divisions
+		let Q = [];
+		for (let i = 0; i < pieces; i++) {
+			Q[i] = {
+				x: [],
+				y: []
+			}
+		}
 		let Q_0 = {
 			x: [],
 			y: []
@@ -96,6 +112,7 @@
 			x: [],
 			y: []
 		}
+
 
 ///streamline this. Also need reference for generating quadratic bezier curves (get appropriate function from segment.type)
 //also - facility for generating points for LINEAR segments
