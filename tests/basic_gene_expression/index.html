@@ -83,10 +83,7 @@
 			x: [],
 			y: []
 		}
-		//gonna need something a little recursive for multiple subdivisions.
-		//Basically, first subdivision according to z (e.g. z = 0.33333)
-		//then the 'second piece' is subdivided the same way, but with 2 pieces
-		//recurse until pieces = 1 :-)
+
 		for(let i in P) {
 			P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
 		}
@@ -95,14 +92,17 @@
 			quadratic: [z**2, z*(z-1), (z-1)**2],
 			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
 		}
-		//generate a bunch of Q's corresponding to the number of divisions
-		let Q = [];
-		for (let i = 0; i < pieces; i++) {
-			Q[i] = {
-				x: [],
-				y: []
-			}
-		}
+		//generate a pair of Q's that will store the control points for both new Beziers
+		
+		// let Q = [];
+		// for (let i = 0; i < 1; i++) {
+		// 	Q[i] = {
+		// 		x: [],
+		// 		y: []
+		// 	}
+		// }
+
+
 		let Q_0 = {
 			x: [],
 			y: []
@@ -135,15 +135,26 @@
 		console.log(Q_0);
 		console.log(Q_1);
 
-		//or really - create a segment from the first piece.
 		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
-		//subdivideSegment(Q_1, pieces - 1);
 
-		//how to capture each new piece along the way?
-		//want the top level to aggregate all of the pieces. Or, simply mutate the segments as we go.
 
-		splitcircle.setAttribute('cx', Q_0.x[3]);
-		splitcircle.setAttribute('cy', Q_0.y[3]);
+		
+		let primrose = new Segment('C', {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[3], y:Q_0.y[3]});
+		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
+		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
+		
+		let lavender = [];
+		let peony = new Segment('C', {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[3], y:Q_1.y[3]});
+		if(pieces > 2) {
+			lavender = subdivideSegment(peony, pieces - 1);
+		}
+		console.log(lavender);
+		if(lavender.length > 0) {
+			return [primrose, lavender[0], lavender[1]];
+		} else {
+			return [primrose, peony];
+		}
+
 	}
 
 	function Segment (type = 'C', start = {x:0, y: 0}, end = {x:0, y:0}) {
@@ -270,6 +281,17 @@
 
 	Pathicle.prototype.render = function (target) {
 			target.insertAdjacentHTML('afterbegin', this.markup);
+	}
+
+	Pathicle.prototype.subdivideSegment = function (segment, pieces = 2) {
+		let subSegs = subdivideSegment(segment, pieces);
+		console.log(subSegs);
+		let idx = this.segments.indexOf(segment);
+		console.log(idx);
+		for (let i = subSegs.length - 1; i >= 0; i--) {
+			this.segments.splice(idx + 1, 0, subSegs[i]);
+		}
+		this.segments = this.segments.filter(seg => seg !== segment);
 	}
 
 
