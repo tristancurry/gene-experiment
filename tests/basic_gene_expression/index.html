@@ -36,6 +36,7 @@
 
   <circle id="mod1circle" cx="20" cy="20" r="5" fill="cyan"/>
   <circle id="mod2circle" cx="180" cy="20" r="5" fill="yellow"/>
+	<circle id="splitcircle" cx="-100" cy="-100" r="5" fill="green"/>
 
 
 </svg>
@@ -47,7 +48,7 @@
 
 
 <script type='text/javascript'>
-
+	let splitcircle = document.getElementById('splitcircle');
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
 	let addParam = function (param, inc) {
@@ -64,8 +65,68 @@
 
 	}
 
-	function Segment (type = 'C', end = {x:0, y:0}) {
+
+
+	let subdivideSegment = function (segment, z = 0.5) {
+		//note - rather than z be defined here, make the number of subdivisions the argument.
+		//calculate z from that.
+		//need start/end and control points of this segment
+		//that's going to depend on segment type
+		let s = segment;
+		let P = {
+			x: [],
+			y: []
+		}
+
+		for(let i in P) {
+			P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
+		}
+		console.log(P);
+		let coeffs = {
+			quadratic: [z**2, z*(z-1), (z-1)**2],
+			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
+		}
+
+		let Q_0 = {
+			x: [],
+			y: []
+		};
+
+		let Q_1 = {
+			x: [],
+			y: []
+		}
+
+///streamline this. Also need reference for generating quadratic bezier curves (get appropriate function from segment.type)
+//also - facility for generating points for LINEAR segments
+		for (let i in Q_0) {
+			let thisP = P[i];
+			Q_0[i] = [
+				thisP[0], 
+				z*thisP[1] - (z-1)*thisP[0],
+				coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0],
+				coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]
+			];
+			Q_1[i] = [
+				coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0],
+				coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1],
+				z*thisP[3] - (z-1)*thisP[2],
+				thisP[3]
+			]
+		}
+
+		console.log(Q_0);
+		console.log(Q_1);
+
+		//then - create the necessary number of segments and put them in an array.
+		//return that.
+		splitcircle.setAttribute('cx', Q_0.x[3]);
+		splitcircle.setAttribute('cy', Q_0.y[3]);
+	}
+
+	function Segment (type = 'C', start = {x:0, y: 0}, end = {x:0, y:0}) {
 		this.cpoints = [];
+		this.start= {x: start.x, y: start.y};
 		this.end = {x: end.x, y: end.y};
 		this.exprs = {};
 		for (let i = 0, l = 2; i < l; i++) {
@@ -165,7 +226,23 @@
 		this.markup = `<path id="${this.name}" d="${this.assemblePath()}" stroke="white" fill="black" />`;
 	}
 
+	Pathicle.prototype.alignSegments = function () {
+		//go through list of segments. Match start of next seg with end of previous
+		for (let i = 0, l = this.segments.length; i < l; i++) {
+			let thisSegment = this.segments[i];
+			if (i == 0) {
+				thisSegment.start = this.start;
+			} else {
+				thisSegment.start = this.segments[i - 1].end;
+			}
+			if (i == l - 1) {
+				thisSegment.end = this.end;
+			}
+		}
+	}
+
 	Pathicle.prototype.update = function () {
+		this.alignSegments();
 		this.element.setAttribute('d', this.assemblePath());
 	}
 
