@@ -84,6 +84,9 @@
 			y: []
 		}
 
+		//before this, need some way of generating the right control points if we are dealing
+		//with one of the 'continuation' types (i.e. S or T)
+		//also need to alter the behaviour if type is linear or quadratic!
 		for(let i in P) {
 			P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
 		}
@@ -95,7 +98,7 @@
 		//generate a pair of Q's that will store the control points for both new Beziers
 		
 		// let Q = [];
-		// for (let i = 0; i < 1; i++) {
+		// for (let i = 0; i < 2; i++) {
 		// 	Q[i] = {
 		// 		x: [],
 		// 		y: []
