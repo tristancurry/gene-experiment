@@ -112,7 +112,12 @@
 			//do something different for type S segments
 			for(let i in P) {
 				P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
+				if(segment.type == 'S') {
+					P[i][1] = s.extrapoint[i];
+					P[i][2] = s.cpoints[0][i];
+				}
 			}
+
 			console.log(P);
 
 
@@ -187,6 +192,7 @@
 		this.start= {x: start.x, y: start.y};
 		this.end = {x: end.x, y: end.y};
 		this.exprs = {};
+		this.extrapoint = {x: 0, y: 0};
 		for (let i = 0, l = 2; i < l; i++) {
 			this.cpoints.push({x:0, y:0});
 			this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
@@ -298,12 +304,23 @@
 			}
 
 			//if it's a S or T type, use this to store previous segment's control point (reflected through start point)
-			//store it in the empty 'second' control point for now - may need a special thing for this later.
+			//store it in the extrapoint....
 			if(thisSegment.type === 'S' || thisSegment.type === 'T') {
 				if(i == 0) {
 					//maybe have a clause in here to handle it if the first point is a continuation of the final point...
 				} else {
 					//oops the calculation of this depends on whether the previous section is a continuation or not.
+					//this is trifficult because if this is one of a series of 'T' continuations, then there is no previous control point...
+					//unless we put one in.
+					//if the previous one is 'S'...use that one's first cpoint.
+					let refpoint = {x:0, y:0};
+					if (this.segments[i - 1].type == 'S' || this.segments[i - 1].type == 'Q' ) {
+						refpoint = {x:this.segments[i - 1].cpoints[0].x, y:this.segments[i - 1].cpoints[0].y}
+					} else if (this.segments[i - 1].type == 'C') {
+						refpoint = {x:this.segments[i - 1].cpoints[1].x, y:this.segments[i - 1].cpoints[1].y}
+					}
+					thisSegment.extrapoint.x = thisSegment.start.x + (thisSegment.start.x - refpoint.x);
+					thisSegment.extrapoint.y = thisSegment.start.y + (thisSegment.start.y - refpoint.y);
 				}
 
 			}
