@@ -296,6 +296,17 @@
 			if (i == l - 1) {
 				thisSegment.end = this.end;
 			}
+
+			//if it's a S or T type, use this to store previous segment's control point (reflected through start point)
+			//store it in the empty 'second' control point for now - may need a special thing for this later.
+			if(thisSegment.type === 'S' || thisSegment.type === 'T') {
+				if(i == 0) {
+					//maybe have a clause in here to handle it if the first point is a continuation of the final point...
+				} else {
+					//oops the calculation of this depends on whether the previous section is a continuation or not.
+				}
+
+			}
 		}
 	}
 
