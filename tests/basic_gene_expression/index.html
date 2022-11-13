@@ -79,6 +79,11 @@
 			z = 1/pieces;
 		}
 
+		let coeffs = {
+			quadratic: [z**2, z*(z-1), (z-1)**2],
+			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
+		}
+
 		let P = {
 			x: [],
 			y: []
@@ -87,24 +92,9 @@
 		//before this, need some way of generating the right control points if we are dealing
 		//with one of the 'continuation' types (i.e. S or T)
 		//also need to alter the behaviour if type is linear or quadratic!
-		for(let i in P) {
-			P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
-		}
-		console.log(P);
-		let coeffs = {
-			quadratic: [z**2, z*(z-1), (z-1)**2],
-			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
-		}
-		//generate a pair of Q's that will store the control points for both new Beziers
-		
-		// let Q = [];
-		// for (let i = 0; i < 2; i++) {
-		// 	Q[i] = {
-		// 		x: [],
-		// 		y: []
-		// 	}
-		// }
 
+
+		//generate a pair of Q's that will store the control points for both new Beziers
 
 		let Q_0 = {
 			x: [],
@@ -117,23 +107,55 @@
 		}
 
 
-///streamline this. Also need reference for generating quadratic bezier curves (get appropriate function from segment.type)
-//also - facility for generating points for LINEAR segments
-		for (let i in Q_0) {
-			let thisP = P[i];
-			Q_0[i] = [
-				thisP[0], 
-				z*thisP[1] - (z-1)*thisP[0],
-				coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0],
-				coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]
-			];
-			Q_1[i] = [
-				coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0],
-				coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1],
-				z*thisP[3] - (z-1)*thisP[2],
-				thisP[3]
-			]
+		if(segment.type == 'C' || segment.type == 'S') {
+			//let it rain. each Q.x and Q.y has length of 4 (4 cps)
+			//do something different for type S segments
+			for(let i in P) {
+				P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
+			}
+			console.log(P);
+
+
+			for (let i in Q_0) {
+				let thisP = P[i];
+				Q_0[i] = [
+					thisP[0], 
+					z*thisP[1] - (z-1)*thisP[0],
+					coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0],
+					coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]
+				];
+				Q_1[i] = [
+					coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0],
+					coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1],
+					z*thisP[3] - (z-1)*thisP[2],
+					thisP[3]
+				]
+			}
+
+		} else if (segment.type == 'Q' || segment.type == 'T') {
+			//each Q.x and Q.y has length of 3 (3cps)
+			//Load start, end and cp into P and do the thing.
+			for(let i in P) {
+				P[i] = [s.start[i], s.cpoints[0][i], s.end[i]];
+			}
+			console.log(P);
+
+		} else if (segment.type == 'L') {
+			//Q.x and Q.y have length of 2. Just the start and end points.
+			//use linear interpolation to find the splitting point and simply break the two pieces.
+			//Load start and end points into P. then do the linear interp.
+			for(let i in P) {
+				P[i] = [s.start[i], s.end[i]];
+			}
+			console.log(P);
+		
+		} else {
+			//if it's not any of the allowable types, refuse to divide it
+			console.log('segment could not be divided (was not a recognised type, e.g. C, S, Q, T or L)' );
+			return segment;
 		}
+
+
 
 		console.log(Q_0);
 		console.log(Q_1);
