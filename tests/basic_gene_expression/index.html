@@ -48,6 +48,8 @@
 
 
 <script type='text/javascript'>
+	const SUB_PRECISION = 3;
+
 	let splitcircle = document.getElementById('splitcircle');
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
@@ -64,7 +66,6 @@
 
 
 	}
-
 
 
 	let subdivideSegment = function (segment, pieces = 2) {
@@ -124,16 +125,16 @@
 			for (let i in Q_0) {
 				let thisP = P[i];
 				Q_0[i] = [
-					thisP[0], 
-					z*thisP[1] - (z-1)*thisP[0],
-					coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0],
-					coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION))
 				];
 				Q_1[i] = [
-					coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0],
-					coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1],
-					z*thisP[3] - (z-1)*thisP[2],
-					thisP[3]
+					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1]).toFixed(SUB_PRECISION)),
+					parseFloat((z*thisP[3] - (z-1)*thisP[2]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[3]).toFixed(SUB_PRECISION))
 				]
 			}
 
@@ -166,26 +167,34 @@
 		console.log(Q_1);
 
 		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
-
+		//if there's more subdividin...take second piece and subdivide with new ratio. and so on.
+		//Each level has a holding array for generated segments.
+		//what is left is two segments. return these as array. Previous level of recursion then goes through this returned array and
+		//appends these to its own array. Finally at top level, the finished array is returned.
 
 		
 		let primrose = new Segment('C', {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[3], y:Q_0.y[3]});
 		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
 		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
 		
-		let lavender = [];
+	
 		let peony = new Segment('C', {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[3], y:Q_1.y[3]});
 		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
 		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
+
+		let segArray  = [primrose];
+
+		let lavender = [];
 		if(pieces > 2) {
 			lavender = subdivideSegment(peony, pieces - 1);
-		}
-		console.log(lavender);
-		if(lavender.length > 0) {
-			return [primrose, lavender[0], lavender[1]];
+			lavender.forEach(seg => {
+				segArray.push(seg);
+			})
 		} else {
-			return [primrose, peony];
+			segArray.push(peony);
 		}
+		console.log(segArray);
+		return segArray;
 
 	}
 
