@@ -145,6 +145,23 @@
 				P[i] = [s.start[i], s.cpoints[0][i], s.end[i]];
 			}
 			console.log(P);
+			for (let i in Q_0) {
+				let thisP = P[i];
+
+				Q_0[i] = [
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION))
+				];
+				Q_1[i] = [
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((z*thisP[2] - (z-1)*thisP[1]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[2]).toFixed(SUB_PRECISION))
+				]
+			}
+
+
+
 
 		} else if (segment.type == 'L') {
 			//Q.x and Q.y have length of 2. Just the start and end points.
@@ -166,6 +183,7 @@
 		console.log(Q_0);
 		console.log(Q_1);
 
+
 		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
 		//if there's more subdividin...take second piece and subdivide with new ratio. and so on.
 		//Each level has a holding array for generated segments.
@@ -173,14 +191,24 @@
 		//appends these to its own array. Finally at top level, the finished array is returned.
 
 		
-		let primrose = new Segment('C', {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[3], y:Q_0.y[3]});
+		let primrose = new Segment(segment.type, {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[Q_0.x.length - 1], y:Q_0.y[Q_0.y.length - 1]});
 		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
 		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
 		
 	
-		let peony = new Segment('C', {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[3], y:Q_1.y[3]});
+		let peony = new Segment(segment.type, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
 		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
 		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
+
+		if (segment.type == 'S') {
+			primrose.extrapoint = {x: primrose.cpoints[0].x, y: primrose.cpoints[0].y};
+			peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
+			//gotta move control point [1] into control point [0]
+			primrose.cpoints[0] = primrose.cpoints[1];
+			peony.cpoints[0] = peony.cpoints[1];
+		}
+
+
 
 		let segArray  = [primrose];
 
@@ -366,7 +394,7 @@
 	let pathy = new Pathicle({name: 'pathy'});
 
 
-	pathy.segments.push(new Segment('C'));
+	pathy.segments.push(new Segment('Q'));
 
 	pathy.segments[0].cpoints = [
 		{x: 20, y: 20},
@@ -374,7 +402,7 @@
 	];
 	pathy.segments[0].end = {x:200, y:200};
 
-	let seg2 = new Segment('S');
+	let seg2 = new Segment('T');
 	seg2.cpoints[0] = {x: 380, y: 200};
 	seg2.cpoints[1] = {x: 380, y: 200};
 
