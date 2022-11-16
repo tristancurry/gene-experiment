@@ -171,7 +171,18 @@
 				P[i] = [s.start[i], s.end[i]];
 			}
 			console.log(P);
-		
+
+			for (let i in Q_0) {
+				let thisP = P[i];
+				Q_0[i] = [
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+				];
+				Q_1[i] = [
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[1]).toFixed(SUB_PRECISION))
+				];
+			}
 		} else {
 			//if it's not any of the allowable types, refuse to divide it
 			console.log('segment could not be divided (was not a recognised type, e.g. C, S, Q, T or L)' );
@@ -394,7 +405,7 @@
 	let pathy = new Pathicle({name: 'pathy'});
 
 
-	pathy.segments.push(new Segment('Q'));
+	pathy.segments.push(new Segment('C'));
 
 	pathy.segments[0].cpoints = [
 		{x: 20, y: 20},
@@ -402,7 +413,7 @@
 	];
 	pathy.segments[0].end = {x:200, y:200};
 
-	let seg2 = new Segment('T');
+	let seg2 = new Segment('L');
 	seg2.cpoints[0] = {x: 380, y: 200};
 	seg2.cpoints[1] = {x: 380, y: 200};
 
