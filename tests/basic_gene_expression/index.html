@@ -68,7 +68,7 @@
 	}
 
 
-	let subdivideSegment = function (segment, pieces = 2) {
+	let subdivideSegment = function (segment, pieces = 2, smooth = false) {
 
 		//need start/end and control points of this segment
 		//that's going to depend on segment type
@@ -206,17 +206,27 @@
 		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
 		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
 		
-	
-		let peony = new Segment(segment.type, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
+	    let subSegType = segment.type;
+		if (smooth === true) {
+			if(segment.type == 'C') {
+				subSegType = 'S';
+
+			} else if(segment.type == 'Q') {
+				subSegType = 'T';
+			}
+		}
+
+		let peony = new Segment(subSegType, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
 		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
 		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
 
-		if (segment.type == 'S') {
-			primrose.extrapoint = {x: primrose.cpoints[0].x, y: primrose.cpoints[0].y};
-			peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
-			//gotta move control point [1] into control point [0]
-			primrose.cpoints[0] = primrose.cpoints[1];
-			peony.cpoints[0] = peony.cpoints[1];
+		if (segment.type == 'S' || (segment.type == 'C' && smooth == true)) {
+			if(segment.type == 'S') {
+				primrose.extrapoint = {x: primrose.cpoints[0].x, y: primrose.cpoints[0].y};
+				primrose.cpoints[0] = primrose.cpoints[1];
+			}
+				peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
+				peony.cpoints[0] = peony.cpoints[1];
 		}
 
 
@@ -386,8 +396,8 @@
 			target.insertAdjacentHTML('afterbegin', this.markup);
 	}
 
-	Pathicle.prototype.subdivideSegment = function (segment, pieces = 2) {
-		let subSegs = subdivideSegment(segment, pieces);
+	Pathicle.prototype.subdivideSegment = function (segment, pieces = 2, smooth = false) {
+		let subSegs = subdivideSegment(segment, pieces, smooth);
 		console.log(subSegs);
 		let idx = this.segments.indexOf(segment);
 		console.log(idx);
@@ -413,7 +423,7 @@
 	];
 	pathy.segments[0].end = {x:200, y:200};
 
-	let seg2 = new Segment('L');
+	let seg2 = new Segment('S');
 	seg2.cpoints[0] = {x: 380, y: 200};
 	seg2.cpoints[1] = {x: 380, y: 200};
 
