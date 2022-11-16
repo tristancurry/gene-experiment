@@ -175,6 +175,8 @@
 		
 		let lavender = [];
 		let peony = new Segment('C', {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[3], y:Q_1.y[3]});
+		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
+		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
 		if(pieces > 2) {
 			lavender = subdivideSegment(peony, pieces - 1);
 		}
