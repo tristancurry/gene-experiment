@@ -52,6 +52,23 @@
 
 	let splitcircle = document.getElementById('splitcircle');
 
+
+	let rotateFrame = function (point, origin, angle) {
+		let t = {x:0, y:0};
+		for (let i in point) {
+			t[i] = point[i] - origin[i];
+		}
+	
+		let rot = {
+			x: Math.cos(angle)*t.x + Math.sin(angle)*t.y,
+			y: -1*Math.sin(angle)*t.x + Math.cos(angle)*t.y
+		}
+
+		return rot;
+	}
+
+
+
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
 	let addParam = function (param, inc) {
 		//aside from effects on other proteins, the protein may also have
@@ -119,7 +136,7 @@
 				}
 			}
 
-			console.log(P);
+
 
 
 			for (let i in Q_0) {
@@ -144,7 +161,7 @@
 			for(let i in P) {
 				P[i] = [s.start[i], s.cpoints[0][i], s.end[i]];
 			}
-			console.log(P);
+
 			for (let i in Q_0) {
 				let thisP = P[i];
 
@@ -170,7 +187,7 @@
 			for(let i in P) {
 				P[i] = [s.start[i], s.end[i]];
 			}
-			console.log(P);
+
 
 			for (let i in Q_0) {
 				let thisP = P[i];
@@ -190,9 +207,6 @@
 		}
 
 
-
-		console.log(Q_0);
-		console.log(Q_1);
 
 
 		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
@@ -242,19 +256,28 @@
 		} else {
 			segArray.push(peony);
 		}
-		console.log(segArray);
+
 		return segArray;
 
 	}
+
+
+	//need a function to go between the segment's reference frame, and the environment reference frame
+	//that's to simplify symmetry of control points, and replication of structures.
+	//protein effects can act on either set of points, and these should update each other accordingly.
 
 	function Segment (type = 'C', start = {x:0, y: 0}, end = {x:0, y:0}) {
 		this.cpoints = [];
 		this.start= {x: start.x, y: start.y};
 		this.end = {x: end.x, y: end.y};
+		this.eigenCpoints = [];
+		this.eigenStart = {x: 0, y: 0};
+		this.eigenEnd = {x: 0, y: 0};
 		this.exprs = {};
 		this.extrapoint = {x: 0, y: 0};
 		for (let i = 0, l = 2; i < l; i++) {
 			this.cpoints.push({x:0, y:0});
+			this.eigenCpoints.push({x:0, y:0});
 			this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
 			this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
 		}
@@ -310,6 +333,118 @@
 		}
 	}
 
+	Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
+		//use this one to set either eigen or regular points, and the corresponding value will change
+		let eigen = true;
+		if(attribute === 'end' || attribute === 'end' || attribute === 'cpoints0' || attribute === 'cpoints1') {
+			eigen = false;
+		}
+		switch (attribute) {
+			case 'start':
+				this.start = coords;
+				break;
+			
+			case 'end':
+				this.end = coords;
+				//update eigenpoints
+				break;
+
+			case 'cpoints0':
+				this.cpoints[0] = coords;
+				break;
+			
+				
+			case 'cpoints1':
+				this.cpoints[1] = coords;
+				break;
+			
+			case 'eend':
+				this.eigenEnd = coords;
+				break;
+
+			case 'ecpoints0':
+				this.eigenCpoints[0] = coords;
+				break;
+			
+				
+			case 'ecpoints1':
+				this.eigenCpoints[1] = coords;
+				break;
+		
+			default:
+				return;
+		}
+		
+		if(eigen === true) {
+			//you updated an eigenpoint. Update environment points accordingly.
+			this.updatePoints();
+		} else {
+			this.updateEigenPoints();
+		}
+		//this isn't working as intended, yet. Moving the start point should retain the eigenpoints, then update the cpoints accordingly.
+		//actually - ONLY moving the cpoints should changes the ecpoints.
+	}
+
+	Segment.prototype.updateEigenPoints = function () {
+		//eigen_cpoints: the segment thinks it is horizontal, and starting at origin. Need coordinate transformation so we can act in this domain.
+		//first determine angle between local horizontal and outside coordinates.
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let eigenStart = {x: 0, y: 0};
+		let eigenEnd = rotateFrame(this.end, this.start, ang);
+
+		let eigenCpoints = [];
+
+		this.cpoints.forEach(c => {
+			let ec = rotateFrame(c, this.start, ang);
+
+			eigenCpoints.push(ec);
+		});
+	
+		this.eigenEnd  = eigenEnd;
+		this.eigenCpoints = eigenCpoints;
+		this.eigenStart = eigenStart;	
+
+		//question is now - how to go the other way? It's easy enough if the start and end points are fixed,
+		//but what if there is some transformation on these in the eigenframe?
+	}
+
+	Segment.prototype.updatePoints = function () {
+		//use this one to move the control points according to the eigen control points (say, for instance, if the start and end points are moved
+		//and you want to keep same basic shape)
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let new_eigenEnd = rotateFrame(this.end, this.start, ang);
+		let endChange = new_eigenEnd.x - this.eigenEnd.x;
+
+
+		let idx = 1;
+		if(this.type == 'S' || this.type == 'Q') {idx = 0};
+
+		let fac = 1;
+		if (this.type == 'Q') {
+			fac = 0.5;
+		}
+		this.eigenCpoints[idx].x += fac*endChange;
+
+		//if it's a C curve -> grab the second eigen control point and translate in direction of end point by the change in eigenEnd
+		//if it's a S curve -> grab first eigen control point and translate in direction of end point by the change in eigenEnd
+		//if it's a Q curve -> grab first eigen control point and translate in direction of end point by half the change in eigenEnd
+		//if it's a T or L, do nothing!
+
+		let cpoints = []
+		this.eigenCpoints.forEach(ec => {
+			let c = rotateFrame(ec, this.eigenStart, -1*ang);
+			for (let i in c) {
+				c[i] += this.start[i];
+			}
+			cpoints.push(c);
+		});	
+
+		this.cpoints = cpoints;
+
+	}
+
+
+
 
 
 	function Pathicle (options = {}) {
@@ -351,16 +486,27 @@
 	}
 
 	Pathicle.prototype.alignSegments = function () {
-		//go through list of segments. Match start of next seg with end of previous
+		//go through list of segments. Match start of next seg with end of previous. Take average location in environment frame.
 		for (let i = 0, l = this.segments.length; i < l; i++) {
 			let thisSegment = this.segments[i];
 			if (i == 0) {
-				thisSegment.start = this.start;
+				thisSegment.setPoint('start', this.start);
 			} else {
-				thisSegment.start = this.segments[i - 1].end;
+				let avgPoint = {x:0, y:0};
+				for (let j in thisSegment.start) {
+					avgPoint[j] = (thisSegment.start[j] + this.segments[i - 1].end[j])/2;
+				}
+				// thisSegment.start[j] = avg;
+				thisSegment.setPoint('start', avgPoint);
+				// this.segments[i - 1].end[j] = avg;
+				this.segments[i - 1].setPoint('end', avgPoint);
+
+				// thisSegment.updatePoints();
+				// this.segments[i - 1].updatePoints();
 			}
 			if (i == l - 1) {
-				thisSegment.end = this.end;
+				// thisSegment.end = this.end;
+				thisSegment.setPoint('end', this.end);
 			}
 
 			//if it's a S or T type, use this to store previous segment's control point (reflected through start point)
@@ -398,9 +544,7 @@
 
 	Pathicle.prototype.subdivideSegment = function (segment, pieces = 2, smooth = false) {
 		let subSegs = subdivideSegment(segment, pieces, smooth);
-		console.log(subSegs);
 		let idx = this.segments.indexOf(segment);
-		console.log(idx);
 		for (let i = subSegs.length - 1; i >= 0; i--) {
 			this.segments.splice(idx + 1, 0, subSegs[i]);
 		}
@@ -414,18 +558,29 @@
 
 	let pathy = new Pathicle({name: 'pathy'});
 
+	pathy.segments.push(new Segment('L'));
+	pathy.segments[0].setPoint('start', {x:0, y:200});
+	pathy.segments[0].setPoint('end', {x:100, y:200});
 
-	pathy.segments.push(new Segment('C'));
 
-	pathy.segments[0].cpoints = [
-		{x: 20, y: 20},
-		{x: 180, y: 20}
-	];
-	pathy.segments[0].end = {x:200, y:200};
+	let seg1 = new Segment('C');
 
-	let seg2 = new Segment('S');
-	seg2.cpoints[0] = {x: 380, y: 200};
-	seg2.cpoints[1] = {x: 380, y: 200};
+
+	pathy.segments.push(seg1);
+
+	seg1.setPoint('start', {x: 100, y: 200});
+	seg1.setPoint('end', {x: 300, y: 200});
+
+	seg1.setPoint('ecpoints0', {x:-40, y:-100});
+	seg1.setPoint('ecpoints1', {x:seg1.eigenEnd.x + 40, y:-100});
+
+
+
+
+
+	let seg2 = new Segment('L');
+	seg2.setPoint('start', {x:300, y:200});
+	seg2.setPoint('end', {x:400, y:200});
 
 	pathy.segments.push(seg2);
 	pathy.update();
@@ -471,7 +626,7 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 	//active proteins will be location-specific (arriving there by transport/diffusion/production)
 	//work through each protein in the list. Currently there are three of these.
-	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 25}, {name: 'C', units: 3}];
+	let activeProteins = [{name: 'A', units: 1}, {name: 'B', units: 1}, {name: 'C', units: 1}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
 		if(!target.effectLookup[protein.name]) {
