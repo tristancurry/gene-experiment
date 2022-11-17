@@ -336,7 +336,7 @@
 	Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
 		//use this one to set either eigen or regular points, and the corresponding value will change
 		let eigen = true;
-		if(attribute === 'end' || attribute === 'end' || attribute === 'cpoints0' || attribute === 'cpoints1') {
+		if(attribute === 'end' || attribute === 'bend' || attribute === 'cpoints0' || attribute === 'cpoints1') {
 			eigen = false;
 		}
 		switch (attribute) {
@@ -382,7 +382,7 @@
 			this.updateEigenPoints();
 		}
 		//this isn't working as intended, yet. Moving the start point should retain the eigenpoints, then update the cpoints accordingly.
-		//actually - ONLY moving the cpoints should changes the ecpoints.
+		//actually - ONLY moving the cpoints should change the ecpoints. (to make THAT work, need second ecpoint relative to segment eend.)
 	}
 
 	Segment.prototype.updateEigenPoints = function () {
