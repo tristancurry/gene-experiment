@@ -19,6 +19,11 @@
 #mod1 {
 	display: block;
 }
+
+.seg_circle {
+	fill: red;
+}
+
 </style>
 
 
@@ -28,7 +33,7 @@
 
 <svg id="being" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
 
- 
+	<g id="being_1"></g>
   <circle cx="0" cy="200" r="8" fill="red"/>
   <circle cx="400" cy="200" r="8" fill="red"/>
   <circle cx="0" cy="400" r="8" fill="red"/>
@@ -453,12 +458,17 @@
 		this.start = options.start || {x: 0, y: 200};
 		this.end = options.end || {x:400, y: 200};
 		this.segments = [];
+		this.markers = [];
+		//want to show lines from end points to control points
+		//if C curve, start -> cpoint0; end -> cpoint1
+		//if S curve, end -> cpoint0;
+		//if Q curve, start and end -< cpoint0
 		this.markup = '';
 
 
 		// pathy.segments[0].end = pathy.end;
 		this.createMarkup();
-		this.render(being);
+		this.render(being_1);
 		this.element = document.getElementById(this.name);
 	}
 
@@ -536,6 +546,31 @@
 	Pathicle.prototype.update = function () {
 		this.alignSegments();
 		this.element.setAttribute('d', this.assemblePath());
+		let circs = this.element.parentNode.getElementsByTagName('circle');
+		console.log(circs);
+		for (let i = 0, l = this.segments.length; i < l; i++) {
+			let thisSegment = this.segments[i];
+			let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+			if (!circs[i]) {
+				thisCirc.setAttribute('r', 8); 
+				thisCirc.setAttribute('class', 'seg_circle');
+				this.element.parentNode.appendChild(thisCirc); 
+			} else {
+				thisCirc = circs[i]
+			}
+			thisCirc.setAttribute('cx', thisSegment.end.x);
+			thisCirc.setAttribute('cy', thisSegment.end.y);
+		}
+		
+		circs = this.element.parentNode.getElementsByTagName('circle');
+		if(circs.length > this.segments.length) {
+			for (let i = circs.length - 1; i >= 0; i--) {
+				if (!segments[i]) {
+					circs[i].remove();
+				}
+				
+			}
+		}
 	}
 
 	Pathicle.prototype.render = function (target) {
