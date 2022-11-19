@@ -506,16 +506,12 @@
 				for (let j in thisSegment.start) {
 					avgPoint[j] = (thisSegment.start[j] + this.segments[i - 1].end[j])/2;
 				}
-				// thisSegment.start[j] = avg;
 				thisSegment.setPoint('start', avgPoint);
-				// this.segments[i - 1].end[j] = avg;
 				this.segments[i - 1].setPoint('end', avgPoint);
 
-				// thisSegment.updatePoints();
-				// this.segments[i - 1].updatePoints();
+
 			}
 			if (i == l - 1) {
-				// thisSegment.end = this.end;
 				thisSegment.setPoint('end', this.end);
 			}
 
@@ -552,7 +548,7 @@
 			let thisSegment = this.segments[i];
 			let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 			if (!circs[i]) {
-				thisCirc.setAttribute('r', 8); 
+				thisCirc.setAttribute('r', 5); 
 				thisCirc.setAttribute('class', 'seg_circle');
 				this.element.parentNode.appendChild(thisCirc); 
 			} else {
