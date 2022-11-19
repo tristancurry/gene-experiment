@@ -235,6 +235,8 @@
 			}
 		}
 
+		primrose.updateEigenPoints();
+
 		let peony = new Segment(subSegType, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
 		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
 		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
@@ -247,6 +249,8 @@
 				peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
 				peony.cpoints[0] = peony.cpoints[1];
 		}
+
+		peony.updateEigenPoints();
 
 
 
@@ -347,21 +351,25 @@
 		switch (attribute) {
 			case 'start':
 				this.start = coords;
+				this.updatePoints();
 				break;
 			
 			case 'end':
 				this.end = coords;
 				//update eigenpoints
+				// this.updateEigenPoints();
+				this.updatePoints();
 				break;
 
 			case 'cpoints0':
 				this.cpoints[0] = coords;
-				this.setPoint()
+				this.updateEigenPoints();
 				break;
 			
 				
 			case 'cpoints1':
 				this.cpoints[1] = coords;
+				this.updateEigenPoints();
 				break;
 			
 			case 'eend':
@@ -370,25 +378,42 @@
 
 			case 'ecpoints0':
 				this.eigenCpoints[0] = coords;
+				this.updatePoints();
 				break;
 			
 				
 			case 'ecpoints1':
 				this.eigenCpoints[1] = coords;
+				this.updatePoints();
 				break;
 		
 			default:
 				return;
 		}
 		
-		if(eigen === true) {
-			//you updated an eigenpoint. Update environment points accordingly.
-			this.updatePoints();
-		} else {
-			this.updateEigenPoints();
-		}
+		// if(eigen === true) {
+		// 	//you updated an eigenpoint. Update environment points accordingly.
+		// 	this.updatePoints();
+		// } else {
+		// 	this.updateEigenPoints();
+		// }
 		//this isn't working as intended, yet. Moving the start point should retain the eigenpoints, then update the cpoints accordingly.
 		//actually - ONLY moving the cpoints should change the ecpoints. (to make THAT work, need second ecpoint relative to segment eend.)
+	}
+
+	Segment.prototype.updateEigenEnd = function() {
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let new_eigenEnd = rotateFrame(this.end, this.start, ang);
+		let endChange = new_eigenEnd.x - this.eigenEnd.x;
+
+		let idx = 1;
+		if(this.type == 'S' || this.type == 'Q') {idx = 0};
+
+		let fac = 1;
+		if (this.type == 'Q') {
+			fac = 0.5;
+		}
+		this.eigenCpoints[idx].x += fac*endChange;
 	}
 
 	Segment.prototype.updateEigenPoints = function () {
@@ -430,6 +455,7 @@
 			fac = 0.5;
 		}
 		this.eigenCpoints[idx].x += fac*endChange;
+		this.eigenEnd = new_eigenEnd;
 
 		//if it's a C curve -> grab the second eigen control point and translate in direction of end point by the change in eigenEnd
 		//if it's a S curve -> grab first eigen control point and translate in direction of end point by the change in eigenEnd
@@ -543,8 +569,7 @@
 	Pathicle.prototype.update = function () {
 		this.alignSegments();
 		this.element.setAttribute('d', this.assemblePath());
-		let circs = this.element.parentNode.getElementsByTagName('circle');
-		console.log(circs);
+		let circs = this.element.parentNode.getElementsByTagName('circle');	
 		for (let i = 0, l = this.segments.length; i < l; i++) {
 			let thisSegment = this.segments[i];
 			let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -658,7 +683,7 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 	//active proteins will be location-specific (arriving there by transport/diffusion/production)
 	//work through each protein in the list. Currently there are three of these.
-	let activeProteins = [{name: 'A', units: 1}, {name: 'B', units: 1}, {name: 'C', units: 1}];
+	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 20}, {name: 'C', units: 5}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
 		if(!target.effectLookup[protein.name]) {
