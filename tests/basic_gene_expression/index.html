@@ -75,13 +75,12 @@
 
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
-	let addParam = function (param, inc, target) {
+	let addParam = function (param, inc) {
 		//aside from effects on other proteins, the protein may also have
 		//a list of direct effects on the appearance of a structure
 		//in this case, it's to increase the x-coordinate of the first control point
 		//the effect needs to be applied as a component of a 'force' against the existing value
 		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
-
 
 				return param + inc;
 
@@ -313,13 +312,17 @@
 				{
 					effect:	addParam, 
 					expr: 'cpoint1x',
-					args: [10, this]
+					args: [10],
+					aux: 'updateEigenPoints',
+					aux_args: []
 				},
 
 				{
 					effect: addParam,
 					expr: 'cpoint0x',
-					args: [-10, this]
+					args: [-10],
+					aux: 'updateEigenPoints',
+					aux_args: []
 				}
 
 			],
@@ -327,22 +330,15 @@
 		B: [
 				{
 					effect:addParam, 
-					expr: 'cpoint1y',
-					args: [-5, this]
+					expr: 'ecpoint1y',
+					args: [-5],
+					aux: 'updatePoints',
+					aux_args: []
 				}
 		],
 	}
 
-	Segment.prototype.express = function () {
-		for (let e in this.exprs) {
-			let expr = this.exprs[e];
-			if (expr) {
-				if(expr.ref) {
-					this[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
-				}
-			}
-		}
-	}
+
 
 	Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
 		//use this one to set either eigen or regular points, and the corresponding value will change
@@ -685,7 +681,7 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 	//active proteins will be location-specific (arriving there by transport/diffusion/production)
 	//work through each protein in the list. Currently there are three of these.
-	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 20}, {name: 'C', units: 5}];
+	let activeProteins = [{name: 'A', units: 10}, {name: 'B', units: 5}, {name: 'C', units: 5}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
 		if(!target.effectLookup[protein.name]) {
@@ -702,10 +698,18 @@ let doProteinEffects = function (target) {
 					let accumulator = thisExpr.val;
 					let units = protein.units;
 					while(units > 0) {
-						accumulator = thisEffect.effect(accumulator, thisEffect.args[0]);
+						accumulator = thisEffect.effect(accumulator, ...thisEffect.args);
 						units -= 1;
 					}
 					target.exprs[thisEffect.expr].val = accumulator;
+					let expr = target.exprs[thisEffect.expr];
+					if(expr.ref) {
+							target[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
+					}
+					if (thisEffect.aux) {
+						target[thisEffect.aux](...thisEffect.aux_args);
+					}
+					
 				});
 				protein.units = 0;
 		
@@ -713,7 +717,6 @@ let doProteinEffects = function (target) {
 	
 		}
 	});
-	target.express();
 }
 
 
