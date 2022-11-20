@@ -75,13 +75,12 @@
 
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
-	let addParam = function (param, inc) {
+	let addParam = function (param, inc, target) {
 		//aside from effects on other proteins, the protein may also have
 		//a list of direct effects on the appearance of a structure
 		//in this case, it's to increase the x-coordinate of the first control point
 		//the effect needs to be applied as a component of a 'force' against the existing value
 		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
-		//TODO: find a way to subdivide an existing bezier curve to allow for growth
 
 
 				return param + inc;
@@ -289,6 +288,8 @@
 			this.eigenCpoints.push({x:0, y:0});
 			this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
 			this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
+			this.exprs[`ecpoint${i}x`] = {val: this.eigenCpoints[i].x, ref: ['eigenCpoints', i, 'x']};
+			this.exprs[`ecpoint${i}y`] = {val: this.eigenCpoints[i].y, ref: ['eigenCpoints', i, 'y']};
 		}
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			this.type = type;
@@ -310,23 +311,24 @@
 	Segment.prototype.effectLookup = {
 		A: [
 				{
-					effect:addParam, 
+					effect:	addParam, 
 					expr: 'cpoint1x',
-					args: [10]
+					args: [10, this]
 				},
 
 				{
 					effect: addParam,
 					expr: 'cpoint0x',
-					args: [-10]
+					args: [-10, this]
 				}
+
 			],
 
 		B: [
 				{
 					effect:addParam, 
 					expr: 'cpoint1y',
-					args: [-5]
+					args: [-5, this]
 				}
 		],
 	}
@@ -720,8 +722,7 @@ let doProteinEffects = function (target) {
 
 
 
-doProteinEffects(pathy.segments[0]);
-pathy.update();
+
 let eventy = new Event('input');
 mod1x.value = pathy.segments[0].cpoints[0].x;
 mod1y.value = pathy.segments[0].cpoints[0].y;
