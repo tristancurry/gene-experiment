@@ -44,10 +44,10 @@ let loadScripts = (urls) => {
 }
 
 const scriptURLs = [
-  'app.js',
+  'utility.js',
   'Pathicle.js',
   'Segment.js',
-  'main.js'
+  'app.js'
 ];
 
 

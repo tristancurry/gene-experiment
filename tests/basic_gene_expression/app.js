@@ -1,214 +1,167 @@
-const SUB_PRECISION = 3;
-
-	let splitcircle = document.getElementById('splitcircle');
 
 
-	let rotateFrame = function (point, origin, angle) {
-		let t = {x:0, y:0};
-		for (let i in point) {
-			t[i] = point[i] - origin[i];
-		}
+	//need a function to go between the segment's reference frame, and the environment reference frame
+	//that's to simplify symmetry of control points, and replication of structures.
+	//protein effects can act on either set of points, and these should update each other accordingly.
+
+
+
+
+
+
 	
-		let rot = {
-			x: Math.cos(angle)*t.x + Math.sin(angle)*t.y,
-			y: -1*Math.sin(angle)*t.x + Math.cos(angle)*t.y
-		}
-
-		return rot;
-	}
-
-
-
-	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
-	let addParam = function (param, inc) {
-		//aside from effects on other proteins, the protein may also have
-		//a list of direct effects on the appearance of a structure
-		//in this case, it's to increase the x-coordinate of the first control point
-		//the effect needs to be applied as a component of a 'force' against the existing value
-		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
-
-				return param + inc;
-
-
-	}
-
-
-	let subdivideSegment = function (segment, pieces = 2, smooth = false) {
-
-		//need start/end and control points of this segment
-		//that's going to depend on segment type
-		//also - consider manipulating these in the horizontal frame of each segment (rather than the canvas frame)
-		//that way, any distortions can be replicated across structures pointing in different directions.
-		let s = segment;
-		let z = 1;
-		if(pieces !== 0 && typeof pieces === 'number') {
-			z = 1/pieces;
-		}
-
-		let coeffs = {
-			quadratic: [z**2, z*(z-1), (z-1)**2],
-			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
-		}
-
-		let P = {
-			x: [],
-			y: []
-		}
-
-		//before this, need some way of generating the right control points if we are dealing
-		//with one of the 'continuation' types (i.e. S or T)
-		//also need to alter the behaviour if type is linear or quadratic!
-
-
-		//generate a pair of Q's that will store the control points for both new Beziers
-
-		let Q_0 = {
-			x: [],
-			y: []
-		};
-
-		let Q_1 = {
-			x: [],
-			y: []
-		}
-
-
-		if(segment.type == 'C' || segment.type == 'S') {
-			//let it rain. each Q.x and Q.y has length of 4 (4 cps)
-			//do something different for type S segments
-			for(let i in P) {
-				P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
-				if(segment.type == 'S') {
-					P[i][1] = s.extrapoint[i];
-					P[i][2] = s.cpoints[0][i];
-				}
-			}
 
 
 
 
-			for (let i in Q_0) {
-				let thisP = P[i];
-				Q_0[i] = [
-					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
-					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION))
-				];
-				Q_1[i] = [
-					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1]).toFixed(SUB_PRECISION)),
-					parseFloat((z*thisP[3] - (z-1)*thisP[2]).toFixed(SUB_PRECISION)),
-					parseFloat((thisP[3]).toFixed(SUB_PRECISION))
-				]
-			}
+	let pathy = new Pathicle({name: 'pathy'});
 
-		} else if (segment.type == 'Q' || segment.type == 'T') {
-			//each Q.x and Q.y has length of 3 (3cps)
-			//Load start, end and cp into P and do the thing.
-			for(let i in P) {
-				P[i] = [s.start[i], s.cpoints[0][i], s.end[i]];
-			}
+	pathy.segments.push(new Segment('L'));
+	pathy.segments[0].setPoint('start', {x:0, y:200});
+	pathy.segments[0].setPoint('end', {x:100, y:200});
 
-			for (let i in Q_0) {
-				let thisP = P[i];
 
-				Q_0[i] = [
-					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
-					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION))
-				];
-				Q_1[i] = [
-					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((z*thisP[2] - (z-1)*thisP[1]).toFixed(SUB_PRECISION)),
-					parseFloat((thisP[2]).toFixed(SUB_PRECISION))
-				]
-			}
+	let seg1 = new Segment('C');
+
+
+	pathy.segments.push(seg1);
+
+	seg1.setPoint('start', {x: 100, y: 200});
+	seg1.setPoint('end', {x: 300, y: 200});
+
+	seg1.setPoint('ecpoints0', {x:-40, y:-100});
+	seg1.setPoint('ecpoints1', {x:seg1.eigenEnd.x + 40, y:-100});
 
 
 
 
-		} else if (segment.type == 'L') {
-			//Q.x and Q.y have length of 2. Just the start and end points.
-			//use linear interpolation to find the splitting point and simply break the two pieces.
-			//Load start and end points into P. then do the linear interp.
-			for(let i in P) {
-				P[i] = [s.start[i], s.end[i]];
-			}
+
+	let seg2 = new Segment('L');
+	seg2.setPoint('start', {x:300, y:200});
+	seg2.setPoint('end', {x:400, y:200});
+
+	pathy.segments.push(seg2);
+	pathy.update();
 
 
-			for (let i in Q_0) {
-				let thisP = P[i];
-				Q_0[i] = [
-					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
-					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
-				];
-				Q_1[i] = [
-					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
-					parseFloat((thisP[1]).toFixed(SUB_PRECISION))
-				];
-			}
+
+
+
+
+
+
+
+
+	
+	
+//this step involves only the proteins that are left after binding, excretion, lysing etc
+//i.e. the ones that 'get to' have direct, visible effects
+
+let doProteinEffects = function (target) {
+	//for each genetic property, create a temporary buffer.
+	//for now though...work on control points
+	//active proteins will be location-specific (arriving there by transport/diffusion/production)
+	//work through each protein in the list. Currently there are three of these.
+	let activeProteins = [{name: 'A', units: 10}, {name: 'B', units: 5}, {name: 'C', units: 5}];
+	activeProteins.forEach(protein => {
+		console.log(`Now deploying protein '${protein.name}'!`);
+		if(!target.effectLookup[protein.name]) {
+			//do nothing
+			console.log(`Protein '${protein.name}' has no prescribed effect.`)
 		} else {
-			//if it's not any of the allowable types, refuse to divide it
-			console.log('segment could not be divided (was not a recognised type, e.g. C, S, Q, T or L)' );
-			return segment;
-		}
-
-
-
-
-		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
-		//if there's more subdividin...take second piece and subdivide with new ratio. and so on.
-		//Each level has a holding array for generated segments.
-		//what is left is two segments. return these as array. Previous level of recursion then goes through this returned array and
-		//appends these to its own array. Finally at top level, the finished array is returned.
-
-		
-		let primrose = new Segment(segment.type, {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[Q_0.x.length - 1], y:Q_0.y[Q_0.y.length - 1]});
-		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
-		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
-		
-	    let subSegType = segment.type;
-		if (smooth === true) {
-			if(segment.type == 'C') {
-				subSegType = 'S';
-
-			} else if(segment.type == 'Q') {
-				subSegType = 'T';
+			console.log(`Protein '${protein.name}' has prescribed effects.`)
+			if(!target.effectLookup[protein.name]) {
+				//no effect. Protein remains in structure until removed.
+			} else {
+				let proteinEffects = target.effectLookup[protein.name];
+				proteinEffects.forEach(thisEffect => {
+					let thisExpr = target.exprs[thisEffect.expr];
+					let accumulator = thisExpr.val;
+					let units = protein.units;
+					while(units > 0) {
+						accumulator = thisEffect.effect(accumulator, ...thisEffect.args);
+						units -= 1;
+					}
+					target.exprs[thisEffect.expr].val = accumulator;
+					let expr = target.exprs[thisEffect.expr];
+					if(expr.ref) {
+							target[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
+					}
+					if (thisEffect.aux) {
+						target[thisEffect.aux](...thisEffect.aux_args);
+					}
+					
+				});
+				protein.units = 0;		
 			}
 		}
-
-		primrose.updateEigenPoints();
-
-		let peony = new Segment(subSegType, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
-		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
-		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
-
-		if (segment.type == 'S' || (segment.type == 'C' && smooth == true)) {
-			if(segment.type == 'S') {
-				primrose.extrapoint = {x: primrose.cpoints[0].x, y: primrose.cpoints[0].y};
-				primrose.cpoints[0] = primrose.cpoints[1];
-			}
-				peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
-				peony.cpoints[0] = peony.cpoints[1];
-		}
-
-		peony.updateEigenPoints();
+	});
+}
 
 
 
-		let segArray  = [primrose];
+//working title. Start with one segment and see how the gene decoding goes.
 
-		let lavender = [];
-		if(pieces > 2) {
-			lavender = subdivideSegment(peony, pieces - 1);
-			lavender.forEach(seg => {
-				segArray.push(seg);
-			})
-		} else {
-			segArray.push(peony);
-		}
 
-		return segArray;
 
-	}
+//need to encode genes for
+//curve type.
+//control points (locations)
+//curve end point
+//ribosomal efficiency (energy, speed of production, error rate)
+//lysosomal efficiency
+//there is a limited (but very large) number of 'receptor' functions describing an effect.
+//these receptors can be inhibited by the actions of certain proteins or even environmental effects.
+//the receptors have a certain number of slots, too. This is subject to genetic factors too...
+//start with a small, but fixed, number of receptors that have fixed slots and sensitivities
+//this will be in the form of a lookup table.
+
+//proteins look like
+// CBNQPCQNBFAXNBAAANMBABB
+// CB    NQPC      QNB      FAXN        BAAB										NM 						BABB
+// type  receptor  strngth  receptor   	can attach to active gene sites ba and ab	spacer (one of several)	can directly bind proteins BA and BB
+//bound proteins (and the binding proteins) are removed from functional processes. Not all proteins bind others.
+
+//receptor looks like
+//NQPC     ABV		bAqT     NFR          CrBr     mfL
+//receptor slots    effect1  strength     effect2  strength
+
+//individual effects drawn from expansive library of effects.
+//these effects change depending on the context (e.g. tissue type)?
+//so each gene needs a number of 'switches'...effectively those active gene sites.
+//a protein can attach to a given switch and either enhance the gene action to a degree, or repress it
+//another protein can bind to these proteins and remove them. So we have to keep track of which proteins are bound to the genes?
+
+//create a 'protein' object, and bind to a 'gene' object.
+//do we want to notionally create 'gene' objects that are then compiled into a genome for exposure to the user? I wanted this to be pretty obscure.
+
+//active gene attachment sites allow protein mediated expression of genes. 
+//receptor on gene looks like
+//NQPC
+//receptor 
+//these can either be promoting or inhibiting receptors. This allows proteins to bind directly to these sites.
+//there are also less specific protein binding sites (ab, aa, etc) that allow a multitude of different proteins to bind.
+
+//those receptor codes could be complementary to the protein's receptor code.
+
+
+//the transcription is an ongoing, dynamic process that generates proteins that have consequences for the shape
+//proteins are soaked up in producing phenotypic things
+//e.g. there's a gene for a C with control points a and b.
+//this is transcribed into a protein that produces this effect. (NB there can be transcription errors!)
+//there may be multiple transcriptions of the same gene, producing a lot of this protein
+//at the same time, there's another protein being generated that produces a different C
+//proteins that affect the exact same 'area' are selected from at random. Their effects are averaged.
+//the selection continues until all 'slots' are used. The 'slots' are determined by the size of the structure, and genetic factors.
+//excess proteins are exchanged between structures, excreted wholesale, or broken down by lysosomal action
+//every action here takes energy to perform
+//other excess material remains in the structure for the next round of allocations. this can end up preventing absorption into the structure
+//or preventing it from producing the mix of proteins required for survival.
+
+			
+//each structure has its own number of cells which affects the protein production (more 'trials' in probability-driven transcription system)
+
+			 
+//start with assumption that each unit has ribosomes and lysosomes - later code for these in the genetic sequence.
+
+//5 stages of growth? Timing regulated by gene activity. Different sets of genes activate at different times...
