@@ -19,6 +19,11 @@
 #mod1 {
 	display: block;
 }
+
+.seg_circle {
+	fill: red;
+}
+
 </style>
 
 
@@ -28,7 +33,7 @@
 
 <svg id="being" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
 
- 
+	<g id="being_1"></g>
   <circle cx="0" cy="200" r="8" fill="red"/>
   <circle cx="400" cy="200" r="8" fill="red"/>
   <circle cx="0" cy="400" r="8" fill="red"/>
@@ -36,6 +41,7 @@
 
   <circle id="mod1circle" cx="20" cy="20" r="5" fill="cyan"/>
   <circle id="mod2circle" cx="180" cy="20" r="5" fill="yellow"/>
+	<circle id="splitcircle" cx="-100" cy="-100" r="5" fill="green"/>
 
 
 </svg>
@@ -47,6 +53,25 @@
 
 
 <script type='text/javascript'>
+	const SUB_PRECISION = 3;
+
+	let splitcircle = document.getElementById('splitcircle');
+
+
+	let rotateFrame = function (point, origin, angle) {
+		let t = {x:0, y:0};
+		for (let i in point) {
+			t[i] = point[i] - origin[i];
+		}
+	
+		let rot = {
+			x: Math.cos(angle)*t.x + Math.sin(angle)*t.y,
+			y: -1*Math.sin(angle)*t.x + Math.cos(angle)*t.y
+		}
+
+		return rot;
+	}
+
 
 
 	//for this test, 'proteinA' will affect the location of the control points for a cubic bezier
@@ -56,22 +81,214 @@
 		//in this case, it's to increase the x-coordinate of the first control point
 		//the effect needs to be applied as a component of a 'force' against the existing value
 		//every modifiable parameter needs a temporary buffer for building this force calculation - create at 'gene expression' step
-		//TODO: find a way to subdivide an existing bezier curve to allow for growth
-
 
 				return param + inc;
 
 
 	}
 
-	function Segment (type = 'C', end = {x:0, y:0}) {
+
+	let subdivideSegment = function (segment, pieces = 2, smooth = false) {
+
+		//need start/end and control points of this segment
+		//that's going to depend on segment type
+		//also - consider manipulating these in the horizontal frame of each segment (rather than the canvas frame)
+		//that way, any distortions can be replicated across structures pointing in different directions.
+		let s = segment;
+		let z = 1;
+		if(pieces !== 0 && typeof pieces === 'number') {
+			z = 1/pieces;
+		}
+
+		let coeffs = {
+			quadratic: [z**2, z*(z-1), (z-1)**2],
+			cubic: [z**3, (z**2)*(z-1), z*((z-1)**2), (z-1)**3],
+		}
+
+		let P = {
+			x: [],
+			y: []
+		}
+
+		//before this, need some way of generating the right control points if we are dealing
+		//with one of the 'continuation' types (i.e. S or T)
+		//also need to alter the behaviour if type is linear or quadratic!
+
+
+		//generate a pair of Q's that will store the control points for both new Beziers
+
+		let Q_0 = {
+			x: [],
+			y: []
+		};
+
+		let Q_1 = {
+			x: [],
+			y: []
+		}
+
+
+		if(segment.type == 'C' || segment.type == 'S') {
+			//let it rain. each Q.x and Q.y has length of 4 (4 cps)
+			//do something different for type S segments
+			for(let i in P) {
+				P[i] = [s.start[i], s.cpoints[0][i], s.cpoints[1][i], s.end[i]];
+				if(segment.type == 'S') {
+					P[i][1] = s.extrapoint[i];
+					P[i][2] = s.cpoints[0][i];
+				}
+			}
+
+
+
+
+			for (let i in Q_0) {
+				let thisP = P[i];
+				Q_0[i] = [
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION))
+				];
+				Q_1[i] = [
+					parseFloat((coeffs.cubic[0]*thisP[3] - 3*coeffs.cubic[1]*thisP[2] + 3*coeffs.cubic[2]*thisP[1] - coeffs.cubic[3]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[3] - 2*coeffs.quadratic[1]*thisP[2] + coeffs.quadratic[2]*thisP[1]).toFixed(SUB_PRECISION)),
+					parseFloat((z*thisP[3] - (z-1)*thisP[2]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[3]).toFixed(SUB_PRECISION))
+				]
+			}
+
+		} else if (segment.type == 'Q' || segment.type == 'T') {
+			//each Q.x and Q.y has length of 3 (3cps)
+			//Load start, end and cp into P and do the thing.
+			for(let i in P) {
+				P[i] = [s.start[i], s.cpoints[0][i], s.end[i]];
+			}
+
+			for (let i in Q_0) {
+				let thisP = P[i];
+
+				Q_0[i] = [
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION))
+				];
+				Q_1[i] = [
+					parseFloat((coeffs.quadratic[0]*thisP[2] - 2*coeffs.quadratic[1]*thisP[1] + coeffs.quadratic[2]*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((z*thisP[2] - (z-1)*thisP[1]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[2]).toFixed(SUB_PRECISION))
+				]
+			}
+
+
+
+
+		} else if (segment.type == 'L') {
+			//Q.x and Q.y have length of 2. Just the start and end points.
+			//use linear interpolation to find the splitting point and simply break the two pieces.
+			//Load start and end points into P. then do the linear interp.
+			for(let i in P) {
+				P[i] = [s.start[i], s.end[i]];
+			}
+
+
+			for (let i in Q_0) {
+				let thisP = P[i];
+				Q_0[i] = [
+					parseFloat((thisP[0]).toFixed(SUB_PRECISION)), 
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+				];
+				Q_1[i] = [
+					parseFloat((z*thisP[1] - (z-1)*thisP[0]).toFixed(SUB_PRECISION)),
+					parseFloat((thisP[1]).toFixed(SUB_PRECISION))
+				];
+			}
+		} else {
+			//if it's not any of the allowable types, refuse to divide it
+			console.log('segment could not be divided (was not a recognised type, e.g. C, S, Q, T or L)' );
+			return segment;
+		}
+
+
+
+
+		//second piece gets recursively split unless it's no longer necessary. In that case, make segments and return both pieces.
+		//if there's more subdividin...take second piece and subdivide with new ratio. and so on.
+		//Each level has a holding array for generated segments.
+		//what is left is two segments. return these as array. Previous level of recursion then goes through this returned array and
+		//appends these to its own array. Finally at top level, the finished array is returned.
+
+		
+		let primrose = new Segment(segment.type, {x:Q_0.x[0], y:Q_0.y[0]}, {x:Q_0.x[Q_0.x.length - 1], y:Q_0.y[Q_0.y.length - 1]});
+		primrose.cpoints[0] = {x:Q_0.x[1], y:Q_0.y[1]};
+		primrose.cpoints[1] = {x:Q_0.x[2], y:Q_0.y[2]};
+		
+	    let subSegType = segment.type;
+		if (smooth === true) {
+			if(segment.type == 'C') {
+				subSegType = 'S';
+
+			} else if(segment.type == 'Q') {
+				subSegType = 'T';
+			}
+		}
+
+		primrose.updateEigenPoints();
+
+		let peony = new Segment(subSegType, {x:Q_1.x[0], y:Q_1.y[0]}, {x:Q_1.x[Q_1.x.length - 1], y:Q_1.y[Q_0.y.length - 1]});
+		peony.cpoints[0] = {x:Q_1.x[1], y:Q_1.y[1]};
+		peony.cpoints[1] = {x:Q_1.x[2], y:Q_1.y[2]};
+
+		if (segment.type == 'S' || (segment.type == 'C' && smooth == true)) {
+			if(segment.type == 'S') {
+				primrose.extrapoint = {x: primrose.cpoints[0].x, y: primrose.cpoints[0].y};
+				primrose.cpoints[0] = primrose.cpoints[1];
+			}
+				peony.extrapoint = {x: peony.cpoints[0].x, y: peony.cpoints[0].y};
+				peony.cpoints[0] = peony.cpoints[1];
+		}
+
+		peony.updateEigenPoints();
+
+
+
+		let segArray  = [primrose];
+
+		let lavender = [];
+		if(pieces > 2) {
+			lavender = subdivideSegment(peony, pieces - 1);
+			lavender.forEach(seg => {
+				segArray.push(seg);
+			})
+		} else {
+			segArray.push(peony);
+		}
+
+		return segArray;
+
+	}
+
+
+	//need a function to go between the segment's reference frame, and the environment reference frame
+	//that's to simplify symmetry of control points, and replication of structures.
+	//protein effects can act on either set of points, and these should update each other accordingly.
+
+	function Segment (type = 'C', start = {x:0, y: 0}, end = {x:0, y:0}) {
 		this.cpoints = [];
+		this.start= {x: start.x, y: start.y};
 		this.end = {x: end.x, y: end.y};
+		this.eigenCpoints = [];
+		this.eigenStart = {x: 0, y: 0};
+		this.eigenEnd = {x: 0, y: 0};
 		this.exprs = {};
+		this.extrapoint = {x: 0, y: 0};
 		for (let i = 0, l = 2; i < l; i++) {
 			this.cpoints.push({x:0, y:0});
+			this.eigenCpoints.push({x:0, y:0});
 			this.exprs[`cpoint${i}x`] = {val: this.cpoints[i].x, ref: ['cpoints', i, 'x']};
 			this.exprs[`cpoint${i}y`] = {val: this.cpoints[i].y, ref: ['cpoints', i, 'y']};
+			this.exprs[`ecpoint${i}x`] = {val: this.eigenCpoints[i].x, ref: ['eigenCpoints', i, 'x']};
+			this.exprs[`ecpoint${i}y`] = {val: this.eigenCpoints[i].y, ref: ['eigenCpoints', i, 'y']};
 		}
 		if(this.seg_cpoints.hasOwnProperty(type)) {
 			this.type = type;
@@ -93,37 +310,170 @@
 	Segment.prototype.effectLookup = {
 		A: [
 				{
-					effect:addParam, 
+					effect:	addParam, 
 					expr: 'cpoint1x',
-					args: [10]
+					args: [10],
+					aux: 'updateEigenPoints',
+					aux_args: []
 				},
 
 				{
 					effect: addParam,
 					expr: 'cpoint0x',
-					args: [-10]
+					args: [-10],
+					aux: 'updateEigenPoints',
+					aux_args: []
 				}
+
 			],
 
 		B: [
 				{
 					effect:addParam, 
-					expr: 'cpoint1y',
-					args: [-5]
+					expr: 'ecpoint1y',
+					args: [-5],
+					aux: 'updatePoints',
+					aux_args: []
 				}
 		],
 	}
 
-	Segment.prototype.express = function () {
-		for (let e in this.exprs) {
-			let expr = this.exprs[e];
-			if (expr) {
-				if(expr.ref) {
-					this[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
-				}
-			}
+
+
+	Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
+		//use this one to set either eigen or regular points, and the corresponding value will change
+		let eigen = true;
+		if(attribute === 'end' || attribute === 'bend' || attribute === 'cpoints0' || attribute === 'cpoints1') {
+			eigen = false;
 		}
+		switch (attribute) {
+			case 'start':
+				this.start = coords;
+				this.updatePoints();
+				break;
+			
+			case 'end':
+				this.end = coords;
+				//update eigenpoints
+				// this.updateEigenPoints();
+				this.updatePoints();
+				break;
+
+			case 'cpoints0':
+				this.cpoints[0] = coords;
+				this.updateEigenPoints();
+				break;
+			
+				
+			case 'cpoints1':
+				this.cpoints[1] = coords;
+				this.updateEigenPoints();
+				break;
+			
+			case 'eend':
+				this.eigenEnd = coords;
+				break;
+
+			case 'ecpoints0':
+				this.eigenCpoints[0] = coords;
+				this.updatePoints();
+				break;
+			
+				
+			case 'ecpoints1':
+				this.eigenCpoints[1] = coords;
+				this.updatePoints();
+				break;
+		
+			default:
+				return;
+		}
+		
+		// if(eigen === true) {
+		// 	//you updated an eigenpoint. Update environment points accordingly.
+		// 	this.updatePoints();
+		// } else {
+		// 	this.updateEigenPoints();
+		// }
+		//this isn't working as intended, yet. Moving the start point should retain the eigenpoints, then update the cpoints accordingly.
+		//actually - ONLY moving the cpoints should change the ecpoints. (to make THAT work, need second ecpoint relative to segment eend.)
 	}
+
+	Segment.prototype.updateEigenEnd = function() {
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let new_eigenEnd = rotateFrame(this.end, this.start, ang);
+		let endChange = new_eigenEnd.x - this.eigenEnd.x;
+
+		let idx = 1;
+		if(this.type == 'S' || this.type == 'Q') {idx = 0};
+
+		let fac = 1;
+		if (this.type == 'Q') {
+			fac = 0.5;
+		}
+		this.eigenCpoints[idx].x += fac*endChange;
+	}
+
+	Segment.prototype.updateEigenPoints = function () {
+		//eigen_cpoints: the segment thinks it is horizontal, and starting at origin. Need coordinate transformation so we can act in this domain.
+		//first determine angle between local horizontal and outside coordinates.
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let eigenStart = {x: 0, y: 0};
+		let eigenEnd = rotateFrame(this.end, this.start, ang);
+
+		let eigenCpoints = [];
+
+		this.cpoints.forEach(c => {
+			let ec = rotateFrame(c, this.start, ang);
+
+			eigenCpoints.push(ec);
+		});
+	
+		this.eigenEnd  = eigenEnd;
+		this.eigenCpoints = eigenCpoints;
+		this.eigenStart = eigenStart;	
+
+		//question is now - how to go the other way? It's easy enough if the start and end points are fixed,
+		//but what if there is some transformation on these in the eigenframe?
+	}
+
+	Segment.prototype.updatePoints = function () {
+		//use this one to move the control points according to the eigen control points (say, for instance, if the start and end points are moved
+		//and you want to keep same basic shape)
+		let ang = Math.atan2((this.end.y - this.start.y), (this.end.x - this.start.x));
+		let new_eigenEnd = rotateFrame(this.end, this.start, ang);
+		let endChange = new_eigenEnd.x - this.eigenEnd.x;
+
+
+		let idx = 1;
+		if(this.type == 'S' || this.type == 'Q') {idx = 0};
+
+		let fac = 1;
+		if (this.type == 'Q') {
+			fac = 0.5;
+		}
+		this.eigenCpoints[idx].x += fac*endChange;
+		this.eigenEnd = new_eigenEnd;
+
+		//if it's a C curve -> grab the second eigen control point and translate in direction of end point by the change in eigenEnd
+		//if it's a S curve -> grab first eigen control point and translate in direction of end point by the change in eigenEnd
+		//if it's a Q curve -> grab first eigen control point and translate in direction of end point by half the change in eigenEnd
+		//if it's a T or L, do nothing!
+
+		let cpoints = []
+		this.eigenCpoints.forEach(ec => {
+			let c = rotateFrame(ec, this.eigenStart, -1*ang);
+			for (let i in c) {
+				c[i] += this.start[i];
+			}
+			cpoints.push(c);
+		});	
+
+		this.cpoints = cpoints;
+
+	}
+
+
 
 
 
@@ -133,12 +483,17 @@
 		this.start = options.start || {x: 0, y: 200};
 		this.end = options.end || {x:400, y: 200};
 		this.segments = [];
+		this.markers = [];
+		//want to show lines from end points to control points
+		//if C curve, start -> cpoint0; end -> cpoint1
+		//if S curve, end -> cpoint0;
+		//if Q curve, start and end -< cpoint0
 		this.markup = '';
 
 
 		// pathy.segments[0].end = pathy.end;
 		this.createMarkup();
-		this.render(being);
+		this.render(being_1);
 		this.element = document.getElementById(this.name);
 	}
 
@@ -165,12 +520,91 @@
 		this.markup = `<path id="${this.name}" d="${this.assemblePath()}" stroke="white" fill="black" />`;
 	}
 
+	Pathicle.prototype.alignSegments = function () {
+		//go through list of segments. Match start of next seg with end of previous. Take average location in environment frame.
+		for (let i = 0, l = this.segments.length; i < l; i++) {
+			let thisSegment = this.segments[i];
+			if (i == 0) {
+				thisSegment.setPoint('start', this.start);
+			} else {
+				let avgPoint = {x:0, y:0};
+				for (let j in thisSegment.start) {
+					avgPoint[j] = (thisSegment.start[j] + this.segments[i - 1].end[j])/2;
+				}
+				thisSegment.setPoint('start', avgPoint);
+				this.segments[i - 1].setPoint('end', avgPoint);
+
+
+			}
+			if (i == l - 1) {
+				thisSegment.setPoint('end', this.end);
+			}
+
+			//if it's a S or T type, use this to store previous segment's control point (reflected through start point)
+			//store it in the extrapoint....
+			if(thisSegment.type === 'S' || thisSegment.type === 'T') {
+				if(i == 0) {
+					//maybe have a clause in here to handle it if the first point is a continuation of the final point...
+				} else {
+					//oops the calculation of this depends on whether the previous section is a continuation or not.
+					//this is trifficult because if this is one of a series of 'T' continuations, then there is no previous control point...
+					//unless we put one in.
+					//if the previous one is 'S'...use that one's first cpoint.
+					let refpoint = {x:0, y:0};
+					if (this.segments[i - 1].type == 'S' || this.segments[i - 1].type == 'Q' ) {
+						refpoint = {x:this.segments[i - 1].cpoints[0].x, y:this.segments[i - 1].cpoints[0].y}
+					} else if (this.segments[i - 1].type == 'C') {
+						refpoint = {x:this.segments[i - 1].cpoints[1].x, y:this.segments[i - 1].cpoints[1].y}
+					}
+					thisSegment.extrapoint.x = thisSegment.start.x + (thisSegment.start.x - refpoint.x);
+					thisSegment.extrapoint.y = thisSegment.start.y + (thisSegment.start.y - refpoint.y);
+				}
+
+			}
+		}
+	}
+
 	Pathicle.prototype.update = function () {
+		this.alignSegments();
 		this.element.setAttribute('d', this.assemblePath());
+		let circs = this.element.parentNode.getElementsByTagName('circle');	
+		for (let i = 0, l = this.segments.length; i < l; i++) {
+			let thisSegment = this.segments[i];
+			let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+			if (!circs[i]) {
+				thisCirc.setAttribute('r', 5); 
+				thisCirc.setAttribute('class', 'seg_circle');
+				this.element.parentNode.appendChild(thisCirc); 
+			} else {
+				thisCirc = circs[i]
+			}
+			thisCirc.setAttribute('cx', thisSegment.end.x);
+			thisCirc.setAttribute('cy', thisSegment.end.y);
+		}
+		
+		circs = this.element.parentNode.getElementsByTagName('circle');
+		if(circs.length > this.segments.length) {
+			for (let i = circs.length - 1; i >= 0; i--) {
+				if (!segments[i]) {
+					circs[i].remove();
+				}
+				
+			}
+		}
 	}
 
 	Pathicle.prototype.render = function (target) {
 			target.insertAdjacentHTML('afterbegin', this.markup);
+	}
+
+	Pathicle.prototype.subdivideSegment = function (segment, pieces = 2, smooth = false) {
+		let subSegs = subdivideSegment(segment, pieces, smooth);
+		let idx = this.segments.indexOf(segment);
+		for (let i = subSegs.length - 1; i >= 0; i--) {
+			this.segments.splice(idx + 1, 0, subSegs[i]);
+		}
+		this.segments = this.segments.filter(seg => seg !== segment);
+		this.update();
 	}
 
 
@@ -179,18 +613,29 @@
 
 	let pathy = new Pathicle({name: 'pathy'});
 
+	pathy.segments.push(new Segment('L'));
+	pathy.segments[0].setPoint('start', {x:0, y:200});
+	pathy.segments[0].setPoint('end', {x:100, y:200});
 
-	pathy.segments.push(new Segment('C'));
 
-	pathy.segments[0].cpoints = [
-		{x: 20, y: 20},
-		{x: 180, y: 20}
-	];
-	pathy.segments[0].end = {x:200, y:200};
+	let seg1 = new Segment('C');
 
-	let seg2 = new Segment('S');
-	seg2.cpoints[0] = {x: 380, y: 200};
-	seg2.cpoints[1] = {x: 380, y: 200};
+
+	pathy.segments.push(seg1);
+
+	seg1.setPoint('start', {x: 100, y: 200});
+	seg1.setPoint('end', {x: 300, y: 200});
+
+	seg1.setPoint('ecpoints0', {x:-40, y:-100});
+	seg1.setPoint('ecpoints1', {x:seg1.eigenEnd.x + 40, y:-100});
+
+
+
+
+
+	let seg2 = new Segment('L');
+	seg2.setPoint('start', {x:300, y:200});
+	seg2.setPoint('end', {x:400, y:200});
 
 	pathy.segments.push(seg2);
 	pathy.update();
@@ -236,7 +681,7 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 	//active proteins will be location-specific (arriving there by transport/diffusion/production)
 	//work through each protein in the list. Currently there are three of these.
-	let activeProteins = [{name: 'A', units: 50}, {name: 'B', units: 25}, {name: 'C', units: 3}];
+	let activeProteins = [{name: 'A', units: 10}, {name: 'B', units: 5}, {name: 'C', units: 5}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
 		if(!target.effectLookup[protein.name]) {
@@ -253,18 +698,23 @@ let doProteinEffects = function (target) {
 					let accumulator = thisExpr.val;
 					let units = protein.units;
 					while(units > 0) {
-						accumulator = thisEffect.effect(accumulator, thisEffect.args[0]);
+						accumulator = thisEffect.effect(accumulator, ...thisEffect.args);
 						units -= 1;
 					}
 					target.exprs[thisEffect.expr].val = accumulator;
+					let expr = target.exprs[thisEffect.expr];
+					if(expr.ref) {
+							target[expr.ref[0]][expr.ref[1]][expr.ref[2]] = expr.val;
+					}
+					if (thisEffect.aux) {
+						target[thisEffect.aux](...thisEffect.aux_args);
+					}
+					
 				});
-				protein.units = 0;
-		
+				protein.units = 0;		
 			}
-	
 		}
 	});
-	target.express();
 }
 
 
@@ -273,8 +723,7 @@ let doProteinEffects = function (target) {
 
 
 
-doProteinEffects(pathy.segments[0]);
-pathy.update();
+
 let eventy = new Event('input');
 mod1x.value = pathy.segments[0].cpoints[0].x;
 mod1y.value = pathy.segments[0].cpoints[0].y;
