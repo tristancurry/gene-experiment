@@ -91,8 +91,10 @@ Pathicle.prototype.update = function () {
   let circs = this.element.parentNode.getElementsByClassName('seg_circle');
   let cpoint_circs_num = 0;
   let cpoint_circs = this.element.parentNode.getElementsByClassName('cpoint_circle');
+  let cpoint_lines = this.element.parentNode.getElementsByClassName('cpoint_line');
   for (let i = 0, l = this.segments.length; i < l; i++) {
     let thisSegment = this.segments[i];
+    let seg_cpoints = thisSegment.seg_cpoints[thisSegment.type];
     let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     if (!circs[i]) {
       thisCirc.setAttribute('r', 5); 
@@ -104,9 +106,9 @@ Pathicle.prototype.update = function () {
     thisCirc.setAttribute('cx', thisSegment.end.x);
     thisCirc.setAttribute('cy', thisSegment.end.y);
 
-    console.log(thisSegment.seg_cpoints[thisSegment.type])
 
-    for (let j = 0; j < thisSegment.seg_cpoints[thisSegment.type]; j++) {
+
+    for (let j = 0; j < seg_cpoints; j++) {
       let thisCpointCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       if (!cpoint_circs[cpoint_circs_num]) {
         thisCpointCirc.setAttribute('r', 3);
@@ -120,7 +122,23 @@ Pathicle.prototype.update = function () {
       cpoint_circs_num++;
     }
 
+    //for the lines...need to know again the number of cpoints.
+    if (seg_cpoints == 2) {
+      //this is a cubic bezier.
+      //connect cpoint0 with start, cpoint1 with end.
+    } else if (seg_cpoints == 1) {
+      if (thisSegment.type == 'Q') {
+  
+      } else if (thisSegment.type == 'S') {
+  
+      }
+    }
+    //if there is one
+      //if type is Q - connect cpoint0 with start and end
+      //if type is S - connect cpoint0 with end
   }
+
+
   
   circs = this.element.parentNode.getElementsByTagName('seg_circle');
   if(circs.length > this.segments.length) {
