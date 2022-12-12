@@ -88,7 +88,8 @@ Pathicle.prototype.alignSegments = function () {
 Pathicle.prototype.update = function () {
   this.alignSegments();
   this.element.setAttribute('d', this.assemblePath());
-  let circs = this.element.parentNode.getElementsByClassName('seg_circle');	
+  let circs = this.element.parentNode.getElementsByClassName('seg_circle');
+  let cpoint_circs_num = 0;
   let cpoint_circs = this.element.parentNode.getElementsByClassName('cpoint_circle');
   for (let i = 0, l = this.segments.length; i < l; i++) {
     let thisSegment = this.segments[i];
@@ -103,9 +104,22 @@ Pathicle.prototype.update = function () {
     thisCirc.setAttribute('cx', thisSegment.end.x);
     thisCirc.setAttribute('cy', thisSegment.end.y);
 
-    if (thisSegment.type == 'C') {
-      
+    console.log(thisSegment.seg_cpoints[thisSegment.type])
+
+    for (let j = 0; j < thisSegment.seg_cpoints[thisSegment.type]; j++) {
+      let thisCpointCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      if (!cpoint_circs[cpoint_circs_num]) {
+        thisCpointCirc.setAttribute('r', 3);
+        thisCpointCirc.setAttribute('class', 'cpoint_circle');
+        this.element.parentNode.appendChild(thisCpointCirc); 
+      } else {
+        thisCpointCirc = cpoint_circs[cpoint_circs_num];
+      }
+      thisCpointCirc.setAttribute('cx', thisSegment.cpoints[j].x);
+      thisCpointCirc.setAttribute('cy', thisSegment.cpoints[j].y);
+      cpoint_circs_num++;
     }
+
   }
   
   circs = this.element.parentNode.getElementsByTagName('seg_circle');
@@ -115,6 +129,13 @@ Pathicle.prototype.update = function () {
         circs[i].remove();
       }
       
+    }
+  }
+
+  cpoint_circs = this.element.parentNode.getElementsByTagName('cpoint_circle');
+  if(cpoint_circs.length > cpoint_circs_num) {
+    for (let i = cpoint_circs.length - 1; i > cpoint_circs_num; i--) {
+        cpoint_circs[i].remove();  
     }
   }
 }
