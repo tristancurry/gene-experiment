@@ -113,15 +113,7 @@ Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
     default:
       return;
   }
-  
-  // if(eigen === true) {
-  // 	//you updated an eigenpoint. Update environment points accordingly.
-  // 	this.updatePoints();
-  // } else {
-  // 	this.updateEigenPoints();
-  // }
-  //this isn't working as intended, yet. Moving the start point should retain the eigenpoints, then update the cpoints accordingly.
-  //actually - ONLY moving the cpoints should change the ecpoints. (to make THAT work, need second ecpoint relative to segment eend.)
+
 }
 
 Segment.prototype.updateEigenEnd = function() {

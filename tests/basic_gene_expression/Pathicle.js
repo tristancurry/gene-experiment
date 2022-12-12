@@ -88,7 +88,8 @@ Pathicle.prototype.alignSegments = function () {
 Pathicle.prototype.update = function () {
   this.alignSegments();
   this.element.setAttribute('d', this.assemblePath());
-  let circs = this.element.parentNode.getElementsByTagName('circle');	
+  let circs = this.element.parentNode.getElementsByClassName('seg_circle');	
+  let cpoint_circs = this.element.parentNode.getElementsByClassName('cpoint_circle');
   for (let i = 0, l = this.segments.length; i < l; i++) {
     let thisSegment = this.segments[i];
     let thisCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -101,9 +102,13 @@ Pathicle.prototype.update = function () {
     }
     thisCirc.setAttribute('cx', thisSegment.end.x);
     thisCirc.setAttribute('cy', thisSegment.end.y);
+
+    if (thisSegment.type == 'C') {
+      
+    }
   }
   
-  circs = this.element.parentNode.getElementsByTagName('circle');
+  circs = this.element.parentNode.getElementsByTagName('seg_circle');
   if(circs.length > this.segments.length) {
     for (let i = circs.length - 1; i >= 0; i--) {
       if (!segments[i]) {
