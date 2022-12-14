@@ -91,6 +91,7 @@ Pathicle.prototype.update = function () {
   let circs = this.element.parentNode.getElementsByClassName('seg_circle');
   let cpoint_circs_num = 0;
   let cpoint_circs = this.element.parentNode.getElementsByClassName('cpoint_circle');
+  let cpoint_lines_num = 0;
   let cpoint_lines = this.element.parentNode.getElementsByClassName('cpoint_line');
   for (let i = 0, l = this.segments.length; i < l; i++) {
     let thisSegment = this.segments[i];
@@ -124,46 +125,53 @@ Pathicle.prototype.update = function () {
 
     //for the lines...need to know again the number of cpoints.
     //if it's zero, then don't worry about it.
-    let newLines = [];
-    for (let t = 0; t < seg_cpoints; t++) {
-      //create paths.
-    }
-    newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
-    if (seg_cpoints == 2) {
-      //this is a cubic bezier. Need two paths.
-      //connect cpoint0 with start, cpoint1 with end.
-      newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
-      newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
-      newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[1].x} ${thisSegment.cpoints[1].y}`);
-
-
-    } else if (seg_cpoints == 1) {
-      //if there is one
-      if (thisSegment.type == 'Q') {
-        //if type is Q - connect cpoint0 with start and end
+    if(seg_cpoints > 0) {
+      let newLines = [];
+      for (let t = 0; t < seg_cpoints; t++) {
         newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
-        newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
-        newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
-
-  
-      } else if (thisSegment.type == 'S') {
-        //if type is S - connect cpoint0 with end
-        newLines[0].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);  
+        //create paths.
       }
+      if (seg_cpoints == 2) {
+        //this is a cubic bezier. Need two paths.
+        //connect cpoint0 with start, cpoint1 with end.
+        newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+        newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[1].x} ${thisSegment.cpoints[1].y}`);
 
 
+      } else if (seg_cpoints == 1) {
+        //if there is one
+        if (thisSegment.type == 'Q') {
+          //if type is Q - connect cpoint0 with start and end
+          newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+          newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+ 
+
+
+    
+        } else if (thisSegment.type == 'S') {
+          //if type is S - connect cpoint0 with end
+          newLines[0].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);  
+        }
+      }
+      console.log(newLines);
+
+      for (let j = 0; j < newLines.length; j++) {
+        newLines[j].setAttribute('class', 'cpoint_line');
+        if(!cpoint_lines[cpoint_lines_num]) {
+          this.element.parentNode.appendChild(newLines[j]);
+        } else {
+          console.log(newLines[j].getAttribute('d'));
+          cpoint_lines[cpoint_lines_num].setAttribute('d', newLines[j].getAttribute('d'));
+        }
+        cpoint_lines_num++;
+      }
     }
-    console.log(newLines);
-    newLines.forEach(path => {
-      console.log(path);
-      path.setAttribute('class', 'cpoint_line');
-      being_1.appendChild(path);
-    });
+    
   }
 
 
   
-  circs = this.element.parentNode.getElementsByTagName('seg_circle');
+  circs = this.element.parentNode.getElementsByClassName('seg_circle');
   if(circs.length > this.segments.length) {
     for (let i = circs.length - 1; i >= 0; i--) {
       if (!segments[i]) {
@@ -173,10 +181,17 @@ Pathicle.prototype.update = function () {
     }
   }
 
-  cpoint_circs = this.element.parentNode.getElementsByTagName('cpoint_circle');
+  cpoint_circs = this.element.parentNode.getElementsByClassName('cpoint_circle');
   if(cpoint_circs.length > cpoint_circs_num) {
     for (let i = cpoint_circs.length - 1; i > cpoint_circs_num; i--) {
         cpoint_circs[i].remove();  
+    }
+  }
+
+  cpoint_lines = this.element.parentNode.getElementsByClassName('cpoint_line');
+  if(cpoint_lines.length > cpoint_lines_num) {
+    for (let i = cpoint_lines.length - 1; i > cpoint_lines_num; i--) {
+        cpoint_lines[i].remove();  
     }
   }
 }

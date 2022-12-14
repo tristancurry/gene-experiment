@@ -37,7 +37,7 @@ Segment.prototype.effectLookup = {
       {
         effect:	addParam, 
         expr: 'cpoint1x',
-        args: [10],
+        args: [0],
         aux: 'updateEigenPoints',
         aux_args: []
       },
@@ -45,7 +45,7 @@ Segment.prototype.effectLookup = {
       {
         effect: addParam,
         expr: 'cpoint0x',
-        args: [-10],
+        args: [-0],
         aux: 'updateEigenPoints',
         aux_args: []
       }
@@ -56,6 +56,14 @@ Segment.prototype.effectLookup = {
       {
         effect:addParam, 
         expr: 'ecpoint1y',
+        args: [-5],
+        aux: 'updatePoints',
+        aux_args: []
+      },
+      
+      {
+        effect:addParam, 
+        expr: 'ecpoint0y',
         args: [-5],
         aux: 'updatePoints',
         aux_args: []

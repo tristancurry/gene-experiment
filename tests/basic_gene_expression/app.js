@@ -62,7 +62,7 @@ let doProteinEffects = function (target) {
 	//for now though...work on control points
 	//active proteins will be location-specific (arriving there by transport/diffusion/production)
 	//work through each protein in the list. Currently there are three of these.
-	let activeProteins = [{name: 'A', units: 10}, {name: 'B', units: 5}, {name: 'C', units: 5}];
+	let activeProteins = [{name: 'B', units: 5}];
 	activeProteins.forEach(protein => {
 		console.log(`Now deploying protein '${protein.name}'!`);
 		if(!target.effectLookup[protein.name]) {
@@ -77,11 +77,13 @@ let doProteinEffects = function (target) {
 				proteinEffects.forEach(thisEffect => {
 					let thisExpr = target.exprs[thisEffect.expr];
 					let accumulator = thisExpr.val;
+					console.log(thisExpr);
 					let units = protein.units;
 					while(units > 0) {
 						accumulator = thisEffect.effect(accumulator, ...thisEffect.args);
 						units -= 1;
 					}
+					console.log(accumulator);
 					target.exprs[thisEffect.expr].val = accumulator;
 					let expr = target.exprs[thisEffect.expr];
 					if(expr.ref) {
