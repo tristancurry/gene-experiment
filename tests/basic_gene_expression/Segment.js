@@ -34,7 +34,6 @@ Segment.prototype.updateExprVals = function () {
   console.log(this.exprs);
   for(let expr in this.exprs) {
     let e = this.exprs[expr];
-    // console.log(this[e.ref[0]][e.ref[1]][e.ref[2]]);
     e.val = this[e.ref[0]][e.ref[1]][e.ref[2]];
   }
 
