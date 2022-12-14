@@ -31,7 +31,6 @@ Segment.prototype.seg_cpoints = {
 }
 
 Segment.prototype.updateExprVals = function () {
-  console.log(this.exprs);
   for(let expr in this.exprs) {
     let e = this.exprs[expr];
     e.val = this[e.ref[0]][e.ref[1]][e.ref[2]];
