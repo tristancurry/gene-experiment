@@ -123,19 +123,42 @@ Pathicle.prototype.update = function () {
     }
 
     //for the lines...need to know again the number of cpoints.
+    //if it's zero, then don't worry about it.
+    let newLines = [];
+    for (let t = 0; t < seg_cpoints; t++) {
+      //create paths.
+    }
+    newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
     if (seg_cpoints == 2) {
-      //this is a cubic bezier.
+      //this is a cubic bezier. Need two paths.
       //connect cpoint0 with start, cpoint1 with end.
+      newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
+      newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+      newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[1].x} ${thisSegment.cpoints[1].y}`);
+
+
     } else if (seg_cpoints == 1) {
+      //if there is one
       if (thisSegment.type == 'Q') {
+        //if type is Q - connect cpoint0 with start and end
+        newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
+        newLines[0].setAttribute('d', `M ${thisSegment.start.x} ${thisSegment.start.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+        newLines[1].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+
   
       } else if (thisSegment.type == 'S') {
-  
+        //if type is S - connect cpoint0 with end
+        newLines[0].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);  
       }
+
+
     }
-    //if there is one
-      //if type is Q - connect cpoint0 with start and end
-      //if type is S - connect cpoint0 with end
+    console.log(newLines);
+    newLines.forEach(path => {
+      console.log(path);
+      path.setAttribute('class', 'cpoint_line');
+      being_1.appendChild(path);
+    });
   }
 
 
