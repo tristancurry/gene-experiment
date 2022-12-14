@@ -129,6 +129,8 @@ Segment.prototype.setPoint = function (attribute, coords = {x: 0, y: 0}) {
       return;
   }
 
+  this.updateExprVals();
+
 }
 
 Segment.prototype.updateEigenEnd = function() {

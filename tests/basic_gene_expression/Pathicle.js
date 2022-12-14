@@ -127,7 +127,7 @@ Pathicle.prototype.update = function () {
     //if it's zero, then don't worry about it.
     if(seg_cpoints > 0) {
       let newLines = [];
-      for (let t = 0; t < seg_cpoints; t++) {
+      for (let t = 0; t < 2; t++) {
         newLines.push(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
         //create paths.
       }
@@ -150,7 +150,8 @@ Pathicle.prototype.update = function () {
     
         } else if (thisSegment.type == 'S') {
           //if type is S - connect cpoint0 with end
-          newLines[0].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);  
+          newLines[0].setAttribute('d', `M ${thisSegment.end.x} ${thisSegment.end.y} L ${thisSegment.cpoints[0].x} ${thisSegment.cpoints[0].y}`);
+          newLines.pop();   
         }
       }
       console.log(newLines);
